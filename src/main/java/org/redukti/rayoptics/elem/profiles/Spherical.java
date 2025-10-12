@@ -32,7 +32,7 @@ public class Spherical extends SurfaceProfile {
 
     @Override
     public double f(Vector3 p) {
-        return p.z - 0.5 * cv * p.lengthSquared();
+        return p.z - 0.5 * cv * p.dot(p);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class Spherical extends SurfaceProfile {
 //         cx2 = 2c
 
         double ax2 = cv;
-        double cx2 = cv * p.lengthSquared() - 2.0 * p.z;
+        double cx2 = cv * p.dot(p) - 2.0 * p.z;
         double b = cv * d.dot(p) - d.z;
         double s = 0.0;
         try {

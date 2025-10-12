@@ -45,10 +45,6 @@ public class Vector3 {
         return Math.sqrt(x * x + y * y + z * z);
     }
 
-    public double lengthSquared() {
-        return x * x + y * y + z * z;
-    }
-
     public Vector3 normalize() {
         double lengthsq = x * x + y * y + z * z;
         if (M.isZero(lengthsq)) {
