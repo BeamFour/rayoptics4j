@@ -43,7 +43,7 @@ public class RayFan {
         this.opt_model = opt_model;
         OpticalSpecs osp = opt_model.optical_spec;
         this.fld = f;
-        this.wvl = wl == null ? osp.spectral_region.central_wvl() : wl;
+        this.wvl = wl == null ? osp.wvls.central_wvl() : wl;
         this.foc = foc == null ? osp.defocus().focus_shift : foc;
         this.image_pt_2d = image_pt_2d;
         this.num_rays = num_rays;

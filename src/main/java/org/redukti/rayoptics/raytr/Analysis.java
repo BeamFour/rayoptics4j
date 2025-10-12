@@ -255,8 +255,8 @@ public class Analysis {
         ChiefRayPkg cr_pkg = Trace.get_chief_ray_pkg(opt_model, fld, wvl, foc);
         RefSphere ref_sphere = setup_exit_pupil_coords(opt_model, fld, wvl, foc, cr_pkg,
                 image_pt_2d);
-        double central_wvl = opt_model.optical_spec.spectral_region.central_wvl();
-        double convert_to_opd = 1 / opt_model.nm_to_sys_units(central_wvl);
+        double central_wvl = opt_model.optical_spec.wvls.central_wvl();
+        double convert_to_opd = 1 / opt_model.system_spec.nm_to_sys_units(central_wvl);
 
         List<Pair<Vector2, Vector3>> fan_data = new ArrayList<>();
         for (int i = 0; i < fan.size(); i++) {

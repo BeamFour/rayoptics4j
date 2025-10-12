@@ -209,7 +209,7 @@ public class FieldSpec {
             if (obj_img_key == ImageKey.Image) {
                 double max_field_ang;
                 if (value_key == ValueKey.RealHeight) {
-                    double wvl = optical_spec.spectral_region.central_wvl();
+                    double wvl = optical_spec.wvls.central_wvl();
                     var pkg = Wideangle.eval_real_image_ht(opt_model,fld,wvl);
                     obj_pt = pkg.ray_data.pt;
                     obj_dir = pkg.ray_data.dir;

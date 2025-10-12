@@ -55,6 +55,12 @@ public class PupilSpec {
         }
     }
 
+    public void apply_scale_factor(double scale_factor) {
+        var value_key = key.valueKey;
+        if (value_key == ValueKey.EPD || value_key == ValueKey.PUPIL)
+            value *= scale_factor;
+    }
+
     /**
      * return pupil spec as paraxial height or slope value
      */

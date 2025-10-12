@@ -234,14 +234,14 @@ public class SequentialModel {
      * returns the central wavelength in nm of the model's `WvlSpec`
      */
     public double central_wavelength() {
-        return opt_model.optical_spec.spectral_region.central_wvl();
+        return opt_model.optical_spec.wvls.central_wvl();
     }
 
     /**
      * returns index into rndx array for wavelength `wvl` in nm
      */
     public int index_for_wavelength(double wvl) {
-        this.wvlns = opt_model.optical_spec.spectral_region.wavelengths;
+        this.wvlns = opt_model.optical_spec.wvls.wavelengths;
         for (int i = 0; i < wvlns.length; i++) {
             if (wvlns[i] == wvl)
                 return i;
@@ -253,7 +253,7 @@ public class SequentialModel {
      * returns the central refractive index of the model's WvlSpec
      */
     public double central_rndx(int i) {
-        int central_wvl = opt_model.optical_spec.spectral_region.reference_wvl;
+        int central_wvl = opt_model.optical_spec.wvls.reference_wvl;
         if (i < 0)
             i += rndx.size();
         return rndx.get(i)[central_wvl];
@@ -321,7 +321,7 @@ public class SequentialModel {
         gbl_tfrms.add(idx, tfrm);
         lcl_tfrms.add(idx, tfrm);
 
-        double[] wvls = opt_model.optical_spec.spectral_region.wavelengths;
+        double[] wvls = opt_model.optical_spec.wvls.wavelengths;
         double[] rindex = new double[wvls.length];
         for (int i = 0; i < wvls.length; i++)
             rindex[i] = gap.medium.rindex(wvls[i]);
@@ -372,9 +372,9 @@ public class SequentialModel {
         // delta n across each surface interface must be set to some
         // reasonable default value. use the index at the central wavelength
         OpticalSpecs osp = opt_model.optical_spec;
-        int ref_wl = osp.spectral_region.reference_wvl;
+        int ref_wl = osp.wvls.reference_wvl;
 
-        this.wvlns = osp.spectral_region.wavelengths;
+        this.wvlns = osp.wvls.wavelengths;
         this.rndx = calc_ref_indices_for_spectrum(wvlns);
 
         var num_ifcs = ifcs.size();
@@ -425,6 +425,13 @@ public class SequentialModel {
         this.lcl_tfrms = this.compute_local_transforms();
 
         // self.seq_def.update()
+    }
+
+    public void update_optical_properties() {
+        if (do_apertures) {
+            if (ifcs.size() > 2)
+                set_clear_apertures();
+        }
     }
 
     public void apply_scale_factor(double scale_factor) {
@@ -502,8 +509,9 @@ public class SequentialModel {
     }
 
     public void set_clear_aperture_paraxial() {
-        var ax_ray = opt_model.parax_model.parax_data.ax_ray;
-        var pr_ray = opt_model.parax_model.parax_data.pr_ray;
+        var osp = opt_model.optical_spec;
+        var ax_ray = osp.parax_data.ax_ray;
+        var pr_ray = osp.parax_data.pr_ray;
         for (int i = 0; i < ifcs.size(); i++) {
             var ifc = ifcs.get(i);
             var sd = Math.abs(ax_ray.get(i).ht) + Math.abs(pr_ray.get(i).ht);
@@ -712,7 +720,7 @@ public class SequentialModel {
         TraceOptions trace_options) {
         // fct is applied to the raw grid and returned as a grid
         var osp = opt_model.optical_spec;
-        var wvls = osp.spectral_region;
+        var wvls = osp.wvls;
         var wvl = central_wavelength();
         double[] wv_list;
         if (wl != null) {

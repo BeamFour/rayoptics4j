@@ -27,7 +27,7 @@ public class FirstOrder {
      * @param wvl
      * @return
      */
-    public static ParaxData compute_first_order(OpticalModel opt_model, Integer stop, double wvl, ParaxialModel src_model) {
+    public static ParaxData compute_first_order(OpticalModel opt_model, Integer stop, double wvl) {
         var sm = opt_model.seq_model;
         var osp = opt_model.optical_spec;
         int start = 1;
@@ -58,14 +58,7 @@ public class FirstOrder {
         if (stop == null) {
             // check for previously computed paraxial data and
             // use that to float the stop
-            if (src_model != null && opt_model.parax_model == src_model) {
-                var pm = opt_model.parax_model;
-                if (pm.pr.get(0).slp == 0)
-                    enp_dist = M.infinity_guard(Double.POSITIVE_INFINITY);
-                else
-                    enp_dist = -pm.pr.get(1).ht/pm.pr.get(0).slp;
-            }
-            else if (osp.parax_data != null) {
+            if (osp.parax_data != null) {
                 //floating stop surface - use parax_model for starting data
                 var pr = osp.parax_data.pr_ray;
                 enp_dist = -pr.get(1).ht/(n_0*pr.get(0).slp);

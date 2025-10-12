@@ -82,6 +82,8 @@ public class WvlSpec {
         // TODO self.calc_colors()
     }
 
+    public void apply_scale_factor(double scale_factor) {}
+
     public double central_wvl() {
         return wavelengths[reference_wvl];
     }
