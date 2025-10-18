@@ -170,16 +170,16 @@ public class Transform {
                 r_before_s2 = null;
         if (s1.decenter != null) {
             // get transformation info after s1
-            Pair<Matrix3, Vector3> after = s1.decenter.tform_after_surf();
-            r_after_s1 = after.first;
-            Vector3 t_after_s1 = after.second;
+            var after = s1.decenter.tform_after_surf();
+            r_after_s1 = after.rt;
+            Vector3 t_after_s1 = after.t;
             t_orig = t_orig.add(t_after_s1);
         }
         if (s2.decenter != null) {
             // get transformation info before s2
-            Pair<Matrix3, Vector3> before = s2.decenter.tform_before_surf();
-            r_before_s2 = before.first;
-            Vector3 t_before_s2 = before.second;
+            var before = s2.decenter.tform_before_surf();
+            r_before_s2 = before.rt;
+            Vector3 t_before_s2 = before.t;
             t_orig = t_orig.add(t_before_s2);
         }
         Matrix3 r_cascade = Matrix3.IDENTITY;
@@ -213,16 +213,16 @@ public class Transform {
                 r_before_s2 = null;
         if (s1.decenter != null) {
             // get transformation info after s1
-            Pair<Matrix3, Vector3> after = s1.decenter.tform_after_surf();
-            r_after_s1 = after.first;
-            Vector3 t_after_s1 = after.second;
+            var after = s1.decenter.tform_after_surf();
+            r_after_s1 = after.rt;
+            Vector3 t_after_s1 = after.t;
             t_orig = t_orig.add(t_after_s1);
         }
         if (s2.decenter != null) {
             // get transformation info before s2
-            Pair<Matrix3, Vector3> before = s2.decenter.tform_before_surf();
-            r_before_s2 = before.first;
-            Vector3 t_before_s2 = before.second;
+            var before = s2.decenter.tform_before_surf();
+            r_before_s2 = before.rt;
+            Vector3 t_before_s2 = before.t;
             t_orig = t_orig.add(t_before_s2);
         }
         // going in reverse direction so negate translation
@@ -262,9 +262,9 @@ public class Transform {
         Vector3 b4_dir;
         if (ifc.decenter != null) {
             // get transformation info after surf
-            Pair<Matrix3, Vector3> xform = ifc.decenter.tform_after_surf();
-            Matrix3 r = xform.first;
-            Vector3 t = xform.second;
+            var xform = ifc.decenter.tform_after_surf();
+            Matrix3 r = xform.rt;
+            Vector3 t = xform.t;
             if (r == null) {
                 b4_pt = ray_seg.pt.minus(t);
                 b4_dir = ray_seg.dir;
