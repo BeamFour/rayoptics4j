@@ -520,7 +520,7 @@ public class SequentialModel {
     }
 
     public void set_clear_apertures() {
-        Vigcalc.set_ape(opt_model);
+        VigCalc.set_ape(opt_model);
     }
 
     /**
