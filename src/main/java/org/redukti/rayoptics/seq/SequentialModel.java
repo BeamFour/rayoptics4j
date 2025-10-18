@@ -395,7 +395,7 @@ public class SequentialModel {
         double n_before = Lists.get(rndx,b4_idx)[ref_wl];
         ZDir z_dir_before = Lists.get(z_dir,b4_idx);
 
-        List<Pair<Interface, Gap>> seq = zip_longest(Lists.from(this.ifcs,start), Lists.from(this.gaps,start));
+        List<Pair<Interface, Gap>> seq = Lists.zip_longest(Lists.from(this.ifcs,start), Lists.from(this.gaps,start));
 
         for (int j = 0, i = start; j < seq.size(); j++) {
             var ifc = seq.get(j).first;
@@ -566,16 +566,6 @@ public class SequentialModel {
         return sb;
     }
 
-    public static List<Pair<Interface, Gap>> zip_longest(List<Interface> ifcs, List<Gap> gaps) {
-        List<Pair<Interface, Gap>> list = new ArrayList<>();
-        for (int i = 0; i < Math.max(ifcs.size(), gaps.size()); i++) {
-            Interface ifc = i < ifcs.size() ? ifcs.get(i) : null;
-            Gap g = i < gaps.size() ? gaps.get(i) : null;
-            list.add(new Pair<>(ifc, g));
-        }
-        return list;
-    }
-
     public static List<PathSeg> zip_longest(List<Interface> ifcs,
                                             List<Gap> gaps,
                                             List<Tfm3d> lcl_tfrms,
@@ -596,8 +586,8 @@ public class SequentialModel {
     }
 
     public static List<PathSeg> zip_longest(List<Interface> ifcs,
-                                            List<Gap> gaps,
-                                            List<ZDir> z_dir) {
+                                                List<Gap> gaps,
+                                                List<ZDir> z_dir) {
         List<PathSeg> list = new ArrayList<>();
         List<Integer> sizes = List.of(ifcs.size(), gaps.size(), z_dir.size());
         int maxSize = sizes.stream().max(Comparator.naturalOrder()).orElse(0);
@@ -609,7 +599,6 @@ public class SequentialModel {
         }
         return list;
     }
-
     /**
      * create a surface and gap where `surf_data` is a list that contains:
      * <p>
