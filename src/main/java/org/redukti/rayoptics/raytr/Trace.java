@@ -743,27 +743,29 @@ public class Trace {
         return rvalue;
     }
 
-    /**
-     * calculate equally inclined chord distance between 2 rays
-     * <p>
-     * Args:
-     * r: (p, d), where p is a point on the ray r and d is the direction
-     * cosine of r
-     * r0: (p0, d0), where p0 is a point on the ray r0 and d0 is the direction
-     * cosine of r0
-     * <p>
-     * Returns:
-     * float: distance along r from equally inclined chord point to p
-     *
-     * @param r
-     * @param r0
-     * @return
-     */
-    public static double eic_distance(RayData r, RayData r0) {
-        // eq 3.9 Hopkins paper
-        double e = (r.dir.plus(r0.dir).dot(r.pt.minus(r0.pt))) /
-                (1. + r.dir.dot(r0.dir));
-        return e;
+    public static List<GridItem> trace_fan(OpticalModel opt_model, TraceFanDef fan_rng, Field fld, double wvl, double foc, ImageFilter img_filter, TraceOptions trace_options) {
+        trace_options.output_filter = null;
+        trace_options.rayerr_filter = null;
+        var start = fan_rng.start;
+        var stop =  fan_rng.stop;
+        var num = fan_rng.num_rays;
+        var step = (stop.minus(start)).divide(num-1);
+        List<GridItem> fan = new ArrayList<>();
+        for (int r = 0; r < num; r++) {
+            var pupil = start;
+            var ray_result = trace_safe(opt_model, pupil, fld, wvl, trace_options);
+            if (ray_result != null) {
+                if (img_filter != null) {
+                    var result = img_filter.apply(pupil,ray_result.pkg);
+                    fan.add(result);
+                }
+                else {
+                    fan.add(new GridItem(pupil,ray_result.pkg));
+                }
+            }
+            start = new Vector2(start.x+step.x, start.y+step.y);
+        }
+        return fan;
     }
 
     public static List<GridItem> trace_grid(OpticalModel opt_model, TraceGridDef grid_rng, Field fld, double wvl, double foc, ImageFilter img_filter, boolean append_if_none, TraceOptions trace_options) {
@@ -784,7 +786,7 @@ public class Trace {
                         grid.add(img_filter.apply(pupil,ray_result.pkg));
                     }
                     else {
-                        grid.add(new GridItem(pupil.x,pupil.y,ray_result.pkg));
+                        grid.add(new GridItem(pupil,ray_result.pkg));
                     }
                 }
                 else {
@@ -793,7 +795,7 @@ public class Trace {
                         grid.add(img_filter.apply(pupil,null));
                     }
                     else {
-                        grid.add(new GridItem(pupil.x,pupil.y,null));
+                        grid.add(new GridItem(pupil,null));
                     }
                 }
                 start = new Vector2(start.x,start.y+step.y);

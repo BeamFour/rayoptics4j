@@ -3,14 +3,14 @@
 // Java version by Dibyendu Majumdar
 package org.redukti.rayoptics.raytr;
 
+import org.redukti.mathlib.Vector2;
+
 public class RayFanItem {
-    public double x;
-    public double y;
+    public Vector2 pupil;
     public RayPkg ray_pkg;
 
-    public RayFanItem(double x, double y, RayPkg ray_pkg) {
-        this.x = x;
-        this.y = y;
+    public RayFanItem(Vector2 pupil, RayPkg ray_pkg) {
+        this.pupil = pupil;
         this.ray_pkg = ray_pkg;
     }
 }

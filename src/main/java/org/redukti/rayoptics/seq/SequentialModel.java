@@ -700,6 +700,95 @@ public class SequentialModel {
         }
     }
 
+    static final class FanFilter implements ImageFilter {
+        final OpticalModel opt_model;
+        final int wi;
+        final Field fld;
+        final double wvl;
+        final double foc;
+        final RayFanCallback fct;
+
+        public FanFilter(OpticalModel opt_model, int wi, Field fld, double wvl, double foc, RayFanCallback fct) {
+            this.opt_model = opt_model;
+            this.wi = wi;
+            this.fld = fld;
+            this.wvl = wvl;
+            this.foc = foc;
+            this.fct = fct;
+        }
+
+        @Override
+        public GridItem apply(Vector2 p, RayPkg pkg) {
+            var result = fct.apply(opt_model,p,wi,pkg,fld,wvl,foc);
+            if (result != null)
+                return new GridItem(p, pkg, result);
+            else
+                return new GridItem(p, pkg);
+        }
+    }
+
+    /**
+     * xy determines whether x (=0) or y (=1) fan
+     */
+    public TraceFanResult trace_fan(
+            RayFanCallback fct,
+            int fi,
+            int xy,
+            int num_rays,
+            TraceOptions trace_options)
+    {
+        var osp = opt_model.optical_spec;
+        var fld = osp.fov.fields[fi];
+        var foc = osp.defocus().get_focus();
+
+        Vector2 ref_img_pt;
+        {
+            var wvl = central_wavelength();
+            var coords = Trace.setup_pupil_coords(opt_model,fld,wvl,foc,null,null);
+            var rs_pkg = coords.ref_sphere;
+            var cr_pkg = coords.chief_ray_pkg;
+
+            fld.chief_ray = cr_pkg;
+            fld.ref_sphere = rs_pkg;
+            ref_img_pt = rs_pkg.image_pt.project_xy();
+        }
+        // Use the central wavelength reference image point for the wavefront error calculations
+        var wvls = osp.spectral_region();
+        var fans_x = new ArrayList<List<Double>>();
+        var fans_y = new ArrayList<List<Double>>();
+        var fan_start = Vector2.vector2_0;
+        var fan_stop = Vector2.vector2_0;
+        fan_start = fan_start.set(xy,-1.0);
+        fan_stop = fan_stop.set(xy,1.0);
+        var fan_def = new TraceFanDef(fan_start,fan_stop,num_rays);
+        var max_rho_val = 0.0;
+        var max_y_val = 0.0;
+        for (int wi = 0; wi < wvls.wavelengths.length; wi++) {
+            double wvl = wvls.wavelengths[wi];
+            var coords = Trace.setup_pupil_coords(opt_model,fld,wvl,foc,ref_img_pt,null);
+            var rs_pkg = coords.ref_sphere;
+            var cr_pkg = coords.chief_ray_pkg;
+            fld.chief_ray = cr_pkg;
+            fld.ref_sphere = rs_pkg;
+            var fan = Trace.trace_fan(opt_model,fan_def,fld,wvl,foc,new FanFilter(opt_model,xy,fld,wvl,foc,fct),trace_options);
+            var f_x = new ArrayList<Double>();
+            var f_y = new ArrayList<Double>();
+            for (int i = 0; i < fan.size(); i++) {
+                var p = fan.get(i).pupil;
+                var y_val = fan.get(i).result;
+                f_x.add(p.v(xy));
+                f_y.add(y_val);
+                if (Math.abs(p.v(xy)) > max_rho_val)
+                    max_rho_val = Math.abs(p.v(xy));
+                if (Math.abs(y_val) > max_y_val)
+                    max_y_val = Math.abs(y_val);
+            }
+            fans_x.add(f_x);
+            fans_y.add(f_y);
+        }
+        return new TraceFanResult(fans_x,fans_y,max_rho_val,max_y_val);
+    }
+
     public List<List<GridItem>> trace_grid(
         TraceGridCallback fct,
         int fi,

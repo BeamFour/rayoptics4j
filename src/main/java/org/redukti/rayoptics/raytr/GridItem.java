@@ -3,14 +3,24 @@
 // Java version by Dibyendu Majumdar
 package org.redukti.rayoptics.raytr;
 
-public class GridItem {
-    public final double x;
-    public final double y;
-    public final RayPkg ray_pkg;
+import org.redukti.mathlib.Vector2;
 
-    public GridItem(double x, double y, RayPkg ray_pkg) {
-        this.x = x;
-        this.y = y;
+public class GridItem {
+    public Vector2 pupil;
+    public Double result = null;
+    public RayPkg ray_pkg = null;
+
+    public GridItem(Vector2 pupil, RayPkg ray_pkg) {
+        this.pupil = pupil;
         this.ray_pkg = ray_pkg;
+    }
+    public GridItem(Vector2 pupil, RayPkg ray_pkg, double result) {
+        this.pupil = pupil;
+        this.result = result;
+        this.ray_pkg = ray_pkg;
+    }
+    public GridItem(Vector2 pupil, double result) {
+        this.pupil = pupil;
+        this.result = result;
     }
 }
