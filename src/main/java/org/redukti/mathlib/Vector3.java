@@ -36,6 +36,9 @@ public class Vector3 {
     public Vector3 times(double scale) {
         return new Vector3(x * scale, y * scale, z * scale);
     }
+    public Vector3 divide(double scale) {
+        return new Vector3(x / scale, y / scale, z / scale);
+    }
 
     public Vector3 negate() {
         return new Vector3(-x, -y, -z);

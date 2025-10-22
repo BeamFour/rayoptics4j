@@ -192,7 +192,7 @@ public class FieldSpec {
         if (is_relative)
             fld_coord = fld_coord.times(value);
         else if (value != 0.0)
-            rel_fld_coord = rel_fld_coord.times(1.0/value);
+            rel_fld_coord = rel_fld_coord.divide(value);
 
         var opt_model = optical_spec.opt_model;
         var pr = optical_spec.parax_data.pr_ray;
@@ -200,7 +200,7 @@ public class FieldSpec {
         Vector3 obj_pt = null;
         Vector3 obj_dir = null;
 
-        var obj2enp_dist = (-fod.obj_dist + fod.enp_dist);
+        var obj2enp_dist = -(fod.obj_dist + fod.enp_dist);
         var pt1 = new Vector3(0.0, 0.0, obj2enp_dist);
         ConjugateType obj_conj = optical_spec.conjugate_type(ImageKey.Object);
         if (obj_conj == ConjugateType.INFINITE) {

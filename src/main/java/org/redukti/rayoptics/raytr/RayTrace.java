@@ -38,7 +38,7 @@ public class RayTrace {
         double sqrrt = Math.sqrt(sqrrt_in);
         double n_cosIp = cosI > 0 ? sqrrt : -sqrrt;
         double alpha = n_cosIp - n_in*cosI;
-        Vector3 d_out = (d_in.times(n_in).plus(normal.times(alpha))).times(1.0 / n_out);
+        Vector3 d_out = (d_in.times(n_in).plus(normal.times(alpha))).divide(n_out);
         return d_out;
     }
 

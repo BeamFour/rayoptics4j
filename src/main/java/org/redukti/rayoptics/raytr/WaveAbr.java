@@ -366,7 +366,7 @@ public class WaveAbr {
         var P1 = P1_P2.first;
         var P2 = P1_P2.second;
 
-        var rF0 = (P1.first.plus(P2.first)).times(0.5);
+        var rF0 = (P1.first.plus(P2.first)).divide(2.0);
         var V_B = ray_op + op_b4;
         var V_BE = cr_op + op_cr_b4;
 
