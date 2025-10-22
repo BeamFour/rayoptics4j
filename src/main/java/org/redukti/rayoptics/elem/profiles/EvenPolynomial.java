@@ -69,6 +69,7 @@ public class EvenPolynomial extends SurfaceProfile {
             this.coefs = new double[10];
         }
         max_nonzero_coef = 0;
+        update();
     }
 
     public EvenPolynomial() {
@@ -88,6 +89,7 @@ public class EvenPolynomial extends SurfaceProfile {
 
     public EvenPolynomial coefs(double[] _coefs) {
         this.coefs = _coefs;
+        update();
         return this;
     }
 
@@ -106,7 +108,7 @@ public class EvenPolynomial extends SurfaceProfile {
 
     @Override
     public SurfaceProfile update() {
-        gen_coef_list();
+        calc_max_nonzero_coef();
         return this;
     }
 
@@ -170,7 +172,8 @@ public class EvenPolynomial extends SurfaceProfile {
         }
     }
 
-    void gen_coef_list() {
+    void calc_max_nonzero_coef() {
+        max_nonzero_coef = -1;
         for (int i = 0; i < coefs.length; i++) {
             if (coefs[i] != 0.0)
                 max_nonzero_coef = i;

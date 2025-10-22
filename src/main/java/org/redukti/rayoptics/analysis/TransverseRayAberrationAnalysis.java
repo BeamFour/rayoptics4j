@@ -22,8 +22,8 @@ public class TransverseRayAberrationAnalysis {
         return null;
     }
 
-    public static TraceFanResult eval_abr_fan(OpticalModel opt_model, int fi, Integer wl, int num_rays, TraceOptions trace_options) {
+    public static TraceFanResult eval_abr_fan(OpticalModel opt_model,int fi,int xy,int num_rays,TraceOptions trace_options) {
         var seq_model =  opt_model.seq_model;
-        return seq_model.trace_fan(TransverseRayAberrationAnalysis::ray_abr,fi,wl,num_rays,trace_options);
+        return seq_model.trace_fan(TransverseRayAberrationAnalysis::ray_abr,fi,xy,num_rays,trace_options);
     }
 }

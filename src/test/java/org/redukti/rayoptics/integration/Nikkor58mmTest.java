@@ -3,6 +3,7 @@ package org.redukti.rayoptics.integration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redukti.mathlib.Vector3;
+import org.redukti.rayoptics.analysis.TransverseRayAberrationAnalysis;
 import org.redukti.rayoptics.elem.profiles.EvenPolynomial;
 import org.redukti.rayoptics.optical.OpticalModel;
 import org.redukti.rayoptics.parax.firstorder.FirstOrderData;
@@ -214,6 +215,8 @@ public class Nikkor58mmTest {
 
         var result = Trace.trace_boundary_rays(opm,new TraceOptions());
         System.out.println(result);
+
+        var trabbr = TransverseRayAberrationAnalysis.eval_abr_fan(opm,1,1,21,new TraceOptions());
     }
 
     static boolean compare(RaySeg s1, RaySeg s2) {

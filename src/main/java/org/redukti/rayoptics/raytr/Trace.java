@@ -534,30 +534,6 @@ public class Trace {
         }
     }
 
-    public static TraceWithOPDResult trace_with_opd(
-            OpticalModel opt_model,
-            Vector2 pupil,
-            Field fld,
-            double wvl,
-            double foc,
-            TraceOptions trace_options) {
-        var chief_ray_pkg = get_chief_ray_pkg(opt_model, fld, wvl, foc);
-        var image_pt_2d = trace_options.image_pt_2d;
-        var image_delta = trace_options.image_delta;
-        var ref_sphere = WaveAbr.calculate_reference_sphere(opt_model,fld,wvl,foc,
-                                chief_ray_pkg, image_pt_2d, image_delta);
-
-        var ray_result = trace_ray(opt_model,pupil,fld,wvl,trace_options);
-        var ray_pkg = ray_result.pkg;
-        var ray_err =  ray_result.err;
-
-        fld.chief_ray = chief_ray_pkg;
-        fld.ref_sphere = ref_sphere;
-        var fod = opt_model.optical_spec.parax_data.fod;
-        // FIXME
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
     /**
      * returns a list of RayPkgs for the boundary rays for field fld
      */
@@ -754,7 +730,7 @@ public class Trace {
         for (int r = 0; r < num; r++) {
             var pupil = start;
             var ray_result = trace_safe(opt_model, pupil, fld, wvl, trace_options);
-            if (ray_result != null) {
+            if (ray_result.pkg != null) {
                 if (img_filter != null) {
                     var result = img_filter.apply(pupil,ray_result.pkg);
                     fan.add(result);
