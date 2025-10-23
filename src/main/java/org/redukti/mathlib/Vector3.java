@@ -53,8 +53,10 @@ public class Vector3 {
         if (M.isZero(lengthsq)) {
             return ZERO;
         } else {
-            double factor = 1.0 / Math.sqrt(lengthsq);
-            return new Vector3(x * factor, y * factor, z * factor);
+            //double factor = 1.0 / Math.sqrt(lengthsq);
+            //return new Vector3(x * factor, y * factor, z * factor);
+            double denom = Math.sqrt(lengthsq);
+            return new Vector3(x / denom, y / denom, z / denom);
         }
     }
 

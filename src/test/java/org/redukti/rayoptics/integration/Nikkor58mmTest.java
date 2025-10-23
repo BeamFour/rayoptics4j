@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redukti.mathlib.Vector3;
 import org.redukti.rayoptics.analysis.TransverseRayAberrationAnalysis;
+import org.redukti.rayoptics.analysis.WavefrontAberrationAnalysis;
 import org.redukti.rayoptics.elem.profiles.EvenPolynomial;
 import org.redukti.rayoptics.optical.OpticalModel;
 import org.redukti.rayoptics.parax.firstorder.FirstOrderData;
@@ -216,7 +217,15 @@ public class Nikkor58mmTest {
         var result = Trace.trace_boundary_rays(opm,new TraceOptions());
         System.out.println(result);
 
-        var trabbr = TransverseRayAberrationAnalysis.eval_abr_fan(opm,1,1,21,new TraceOptions());
+        var transAber = TransverseRayAberrationAnalysis.eval_abr_fan(opm,1,1,21,new TraceOptions());
+        Assertions.assertEquals(-3.2620548349684384, transAber.fans_y.get(1).get(0),1e-15);
+        Assertions.assertEquals(0.0, transAber.fans_y.get(1).get(9),1e-15);
+        Assertions.assertEquals(-0.3119345075482975, transAber.fans_y.get(1).get(19),1e-15);
+
+        var waveAber = WavefrontAberrationAnalysis.eval_opd_fan(opm,1,1,21,new TraceOptions());
+        Assertions.assertEquals(-0.0002035451272355, waveAber.fans_y.get(1).get(0),1e-15);
+        Assertions.assertEquals(0.0, waveAber.fans_y.get(1).get(9),1e-15);
+        Assertions.assertEquals(0.0000240955091344, waveAber.fans_y.get(1).get(19),1e-15);
     }
 
     static boolean compare(RaySeg s1, RaySeg s2) {
