@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.redukti.mathlib.Vector3;
 import org.redukti.rayoptics.elem.profiles.EvenPolynomial;
 import org.redukti.rayoptics.optical.OpticalModel;
-import org.redukti.rayoptics.parax.firstorder.FirstOrderData;
+import org.redukti.rayoptics.parax.FirstOrderData;
 import org.redukti.rayoptics.raytr.*;
 import org.redukti.rayoptics.seq.SequentialModel;
 import org.redukti.rayoptics.seq.SurfaceData;

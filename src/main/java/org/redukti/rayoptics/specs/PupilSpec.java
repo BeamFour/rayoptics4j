@@ -3,7 +3,7 @@
 // Java version by Dibyendu Majumdar
 package org.redukti.rayoptics.specs;
 
-import org.redukti.rayoptics.parax.firstorder.Etendue;
+import org.redukti.rayoptics.parax.Etendue;
 import org.redukti.rayoptics.util.Pair;
 import org.redukti.rayoptics.util.Triple;
 

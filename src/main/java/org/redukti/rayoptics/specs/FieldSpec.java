@@ -5,7 +5,7 @@ package org.redukti.rayoptics.specs;
 
 import org.redukti.mathlib.Matrix3;
 import org.redukti.mathlib.Vector3;
-import org.redukti.rayoptics.parax.firstorder.Etendue;
+import org.redukti.rayoptics.parax.Etendue;
 import org.redukti.rayoptics.raytr.Wideangle;
 import org.redukti.rayoptics.util.Lists;
 import org.redukti.rayoptics.util.Pair;

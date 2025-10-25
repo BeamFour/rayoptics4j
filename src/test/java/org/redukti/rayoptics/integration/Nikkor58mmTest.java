@@ -7,7 +7,7 @@ import org.redukti.rayoptics.analysis.TransverseRayAberrationAnalysis;
 import org.redukti.rayoptics.analysis.WavefrontAberrationAnalysis;
 import org.redukti.rayoptics.elem.profiles.EvenPolynomial;
 import org.redukti.rayoptics.optical.OpticalModel;
-import org.redukti.rayoptics.parax.firstorder.FirstOrderData;
+import org.redukti.rayoptics.parax.FirstOrderData;
 import org.redukti.rayoptics.raytr.*;
 import org.redukti.rayoptics.seq.SequentialModel;
 import org.redukti.rayoptics.seq.SurfaceData;
