@@ -40,7 +40,7 @@ import java.util.List;
  */
 public class EvenPolynomial extends SurfaceProfile {
 
-    double cc;
+    public double cc;
     double[] coefs;
     int max_nonzero_coef;
 
@@ -158,6 +158,13 @@ public class EvenPolynomial extends SurfaceProfile {
         return z_tot;
     }
 
+    /**
+     * Access to coefficients via polynomial order
+     */
+    public double get_by_order(int i) {
+        return coefs[i/2 -1];
+    }
+
     @Override
     public List<Vector2> profile(double[] sd, int dir, int steps) {
         return null;
@@ -196,4 +203,5 @@ public class EvenPolynomial extends SurfaceProfile {
         sb.append(")");
         return sb;
     }
+
 }
