@@ -20,7 +20,7 @@ public class SpotAnalysis {
             var image_pt = fld.ref_sphere.image_pt;
             var ray = ray_pkg.ray;
             var dist = foc / Lists.get(ray,-1).d.z;
-            var defocussed_pt = Lists.get(ray,-1).d.plus(Lists.get(ray,-1).d.times(dist));
+            var defocussed_pt = Lists.get(ray,-1).p.plus(Lists.get(ray,-1).d.times(dist));
             var t_abr = defocussed_pt.minus(image_pt);
             return new GridItem(t_abr.project_xy(),ray_pkg);
         }
