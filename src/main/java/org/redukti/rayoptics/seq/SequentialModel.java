@@ -631,7 +631,7 @@ public class SequentialModel {
                                                  Double wvl) {
 
         if (wvl == null)
-            wvl = 550.0;
+            wvl = 587.5618;
         Surface s = new Surface();
 
         if (radius_mode) {
@@ -647,16 +647,22 @@ public class SequentialModel {
         ZDir z_dir = ZDir.PROPAGATE_RIGHT;
 
         if (surf_data.refractive_index != null) {
+            Glass g = surf_data.glass_name != null ? Glass.glassByName(surf_data.glass_name) : null;
             if (surf_data.v_number == null) {
                 if (surf_data.refractive_index == 1.0)
                     mat = new Air();
+                else if (g != null)
+                    mat = g;
                 else
                     mat = new Medium(surf_data.refractive_index);
             } else {
                 if (surf_data.refractive_index == 1.0)
                     mat = new Air();
-                else
-                    mat = new Glass(surf_data.refractive_index, surf_data.v_number);
+                else if (g != null)
+                    mat = g;
+                else {
+                    mat = new Glass(surf_data.refractive_index, surf_data.v_number, 0.0);
+                }
             }
         } else if (surf_data.interact_mode == InteractMode.REFLECT) {
             s.interact_mode = InteractMode.REFLECT;

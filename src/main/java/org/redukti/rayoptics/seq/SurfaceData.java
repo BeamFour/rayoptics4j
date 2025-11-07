@@ -26,6 +26,14 @@ public class SurfaceData {
         return this;
     }
 
+    public SurfaceData rindex(double index, double vd, String glass_name, String catalog_name) {
+        this.refractive_index = index;
+        this.v_number = vd;
+        this.glass_name = glass_name;
+        this.catalog_name = catalog_name;
+        return this;
+    }
+
     public SurfaceData mode(InteractMode mode) {
         this.interact_mode = mode;
         this.glass_name = null;
