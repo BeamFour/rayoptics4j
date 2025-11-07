@@ -107,11 +107,10 @@ public class Spherical extends SurfaceProfile {
         double cx2 = cv * p.dot(p) - 2.0 * p.z;
         double b = cv * d.dot(p) - d.z;
         double s = 0.0;
-        try {
-            s = cx2 / (z_dir.value * Math.sqrt(b * b - ax2 * cx2) - b);
-        } catch (Exception e) {
-            throw new TraceMissedSurfaceException(e);
-        }
+        double tmp = b * b - ax2 * cx2;
+        if (tmp < 0)
+            throw new TraceMissedSurfaceException();
+        s = cx2 / (z_dir.value * Math.sqrt(tmp) - b);
         Vector3 p1 = p.add(d.times(s));
         return new IntersectionResult(s, p1);
     }
