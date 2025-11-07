@@ -3,6 +3,7 @@ package org.redukti.rayoptics.integration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redukti.mathlib.Vector3;
+import org.redukti.rayoptics.analysis.SpotAnalysis;
 import org.redukti.rayoptics.analysis.TransverseRayAberrationAnalysis;
 import org.redukti.rayoptics.analysis.WavefrontAberrationAnalysis;
 import org.redukti.rayoptics.elem.profiles.EvenPolynomial;
@@ -224,6 +225,9 @@ public class Nikkor58mmTest {
         Assertions.assertEquals(-0.0002035451272355, waveAber.fans_y.get(1).get(0),1e-15);
         Assertions.assertEquals(0.0, waveAber.fans_y.get(1).get(9),1e-15);
         Assertions.assertEquals(0.0000240955091344, waveAber.fans_y.get(1).get(19),1e-15);
+
+        var spotAnal = SpotAnalysis.eval_grid(opm,1,1,21,new TraceOptions());
+        return;
     }
 
     static boolean compare(RaySeg s1, RaySeg s2) {
