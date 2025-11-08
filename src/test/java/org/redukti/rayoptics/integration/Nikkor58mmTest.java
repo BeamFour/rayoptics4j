@@ -227,6 +227,20 @@ public class Nikkor58mmTest {
         Assertions.assertEquals(0.0000240955091344, waveAber.fans_y.get(1).get(19),1e-15);
 
         var spotAnal = SpotAnalysis.eval_grid(opm,1,1,21,new TraceOptions());
+        var grids = spotAnal.get(0);
+        double mean = 0, max = 0;
+        for (var grid: grids) {
+            //System.out.println("pupil = " + grid.pupil.toString());
+            var l = grid.pupil.len();
+            //System.out.println("len = " + l);
+            if (l > max) {
+                max = l;
+            }
+            mean += (l*l);
+        }
+        mean = Math.sqrt(mean/grids.size());
+        Assertions.assertEquals(mean*1000,10.636873278679923,1e-15);
+        Assertions.assertEquals(max*1000,26.879611127471307,1e-15);
         return;
     }
 
