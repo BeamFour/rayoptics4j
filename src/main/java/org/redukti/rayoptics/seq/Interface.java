@@ -96,7 +96,8 @@ public class Interface {
      *             fuzz: tolerance on test pt/aperture comparison,
      *                   i.e. pt fuzzy <= surface_od
      */
-    public boolean point_inside(double x, double y, double fuzz) {
+    public boolean point_inside(double x, double y, Double fuzz) {
+        if (fuzz == null) fuzz = 1e-5;
         return Math.sqrt(x*x + y*y) <= max_aperture + fuzz;
     }
 

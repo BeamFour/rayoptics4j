@@ -768,7 +768,9 @@ public class Trace {
                 else {
                     //ray outside pupil or failed
                     if (img_filter != null) {
-                        grid.add(img_filter.apply(pupil,null));
+                        var item = img_filter.apply(pupil,null);
+                        if (item != null || append_if_none)
+                            grid.add(item);
                     }
                     else {
                         grid.add(new GridItem(pupil,null));

@@ -29,7 +29,8 @@ public class Circular extends Aperture {
     }
 
     @Override
-    public boolean point_inside(double x, double y,double fuzz) {
+    public boolean point_inside(double x, double y,Double fuzz) {
+        if (fuzz == null) fuzz = 1e-5;
         Vector2 v = tform(x, y);
         return Math.sqrt(v.x*v.x + v.y*v.y) <= radius + fuzz;
     }

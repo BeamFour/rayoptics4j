@@ -243,7 +243,7 @@ public class RayTrace {
                 if (options.check_apertures &&
                     in_surface_range(first_surf,last_surf,surf) &&
                         interact_mode != InteractMode.PHANTOM) {
-                    if (options.pt_inside_fuzz != null && !ifc.point_inside(inc_pt.x, inc_pt.y, options.pt_inside_fuzz))
+                    if (!ifc.point_inside(inc_pt.x, inc_pt.y, options.pt_inside_fuzz))
                         throw new TraceRayBlockedException(ifc, inc_pt);
                 }
 

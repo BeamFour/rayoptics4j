@@ -23,4 +23,9 @@ public class GridItem {
         this.pupil = pupil;
         this.result = result;
     }
+
+    @Override
+    public String toString() {
+        return pupil.toString();
+    }
 }
