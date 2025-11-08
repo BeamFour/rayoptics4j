@@ -241,7 +241,6 @@ public class Nikkor58mmTest {
         mean = Math.sqrt(mean/grids.size());
         Assertions.assertEquals(mean*1000,10.636873278679923,1e-15);
         Assertions.assertEquals(max*1000,26.879611127471307,1e-15);
-        return;
     }
 
     static boolean compare(RaySeg s1, RaySeg s2) {

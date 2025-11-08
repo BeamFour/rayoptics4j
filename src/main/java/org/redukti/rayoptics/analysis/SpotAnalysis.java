@@ -32,4 +32,15 @@ public class SpotAnalysis {
         var seq_model =  opt_model.seq_model;
         return seq_model.trace_grid(SpotAnalysis::spot,fi,wl,num_rays,false,trace_options);
     }
+
+    public static SpotAnalysisResult eval(OpticalModel opt_model, int num_rays, TraceOptions trace_options) {
+        SpotAnalysisResult result = new SpotAnalysisResult();
+        var fov = opt_model.optical_spec.fov;
+        for (int fi = 0; fi < fov.fields.length; fi++) {
+            Field f = fov.fields[fi];
+            result.add(f, eval_grid(opt_model,fi,null,num_rays,trace_options));
+        }
+        return result;
+    }
+
 }
