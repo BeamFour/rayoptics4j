@@ -807,7 +807,7 @@ public class SequentialModel {
         var wvls = osp.wvls;
         var wvl = central_wavelength();
         double[] wv_list;
-        if (wl != null) {
+        if (wl == null) {
             wv_list = wvls.wavelengths;
         }
         else {
