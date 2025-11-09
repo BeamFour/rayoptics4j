@@ -108,4 +108,9 @@ public class Field {
     public void clear_vignetting() {
         vux = vuy = vlx = vly = 0.;
     }
+
+    @Override
+    public String toString() {
+        return "Field(x=" + x + ", y=" + y + ", wt=" + wt + ")";
+    }
 }

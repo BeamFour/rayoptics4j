@@ -13,4 +13,9 @@ public class SpecKey {
         this.imageKey = imageKey;
         this.valueKey = valueKey;
     }
+
+    @Override
+    public String toString() {
+        return "SpecKey(type=" + type + ", imageKey=" + imageKey + ", valueKey=" + valueKey + ')';
+    }
 }

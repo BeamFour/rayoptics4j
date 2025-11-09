@@ -89,4 +89,9 @@ public class PupilSpec {
         }
         return new Triple<>(pupil_oi_key, pupil_key, pupil_value);
     }
+
+    @Override
+    public String toString() {
+        return "PupilSpec(key=" + key + ", value=" +  value + ")";
+    }
 }

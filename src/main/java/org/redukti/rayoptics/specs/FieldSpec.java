@@ -299,4 +299,9 @@ public class FieldSpec {
             f.clear_vignetting();
         }
     }
+
+    @Override
+    public String toString() {
+        return "FieldSpec(key=" + key + ", max field=" + max_field().first + ", is wide angle=" + is_wide_angle + ")";
+    }
 }

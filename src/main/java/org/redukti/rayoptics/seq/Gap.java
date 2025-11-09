@@ -37,8 +37,7 @@ public class Gap {
     }
 
     public StringBuilder toString(StringBuilder sb) {
-        sb.append(getClass().getSimpleName()).append("(")
-                .append("t=").append(thi).append(", medium=");
+        sb.append("Gap(").append("t=").append(thi).append(", medium=");
         medium.toString(sb);
         sb.append(")");
         return sb;

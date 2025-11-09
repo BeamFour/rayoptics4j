@@ -13,4 +13,9 @@ public class Coord {
         this.pt = pt;
         this.dir = dir;
     }
+
+    @Override
+    public String toString() {
+        return "Coord(" + "pt=" + pt + ", dir=" + dir + ')';
+    }
 }
