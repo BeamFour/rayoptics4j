@@ -11,7 +11,7 @@ import org.redukti.rayoptics.specs.Field;
 public class WavefrontAberrationAnalysis {
 
     public static Double opd(OpticalModel opt_model, Vector2 p, int xy, RayPkg ray_pkg, Field fld, double wvl, double foc) {
-        var convert_to_waves = 1.0/opt_model.nm_to_sys_units(opt_model.optical_spec.spectral_region().central_wvl());
+        var convert_to_waves = 1.0/opt_model.nm_to_sys_units(wvl);
         if (ray_pkg.ray != null) {
             var fod = opt_model.optical_spec.parax_data.fod;
             var ops = WaveAbr.wave_abr_full_calc(fod, fld, wvl, foc, ray_pkg,
