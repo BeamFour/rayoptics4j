@@ -102,13 +102,15 @@ public class ParaxModel {
                 var y = ax.get(i).ht;
                 var ybar = rel_fov * pr.get(i).ht;
                 var ratio = (max_ap - Math.abs(ybar))/Math.abs(y);
-                if (ratio > 0) {
-                    if (ybar < 0)
+                if (ratio > 0.0) {
+                    if (ybar < 0.0) {
                         if (ratio < min_vly.first)
                             min_vly = new Pair<>(ratio, i);
-                    else if (ybar > 0)
+                    }
+                    else if (ybar > 0.0) {
                         if (ratio < min_vuy.first)
                             min_vuy = new Pair<>(ratio, i);
+                    }
                     else { //  ybar == 0
                         if (ratio < min_vly.first)
                             min_vly = new Pair<>(ratio, i);
