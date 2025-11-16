@@ -127,20 +127,20 @@ public class Nikkor58mmTest2 {
         //opm.update_model();
         var transAber = TransverseRayAberrationAnalysis.eval_abr_fan(opm,0,1,21,new TraceOptions());
 
-        double[] x = {-2.46527285e-01, -2.21874556e-01, -1.97221828e-01, -1.72569099e-01,
+        double[] xvals = {-2.46527285e-01, -2.21874556e-01, -1.97221828e-01, -1.72569099e-01,
   -1.47916371e-01, -1.23263642e-01, -9.86109139e-02, -7.39581854e-02,
   -4.93054570e-02, -2.46527285e-02, -3.42125335e-17,  4.75361045e-02,
    9.50722090e-02,  1.42608313e-01,  1.90144418e-01,  2.37680522e-01,
    2.85216627e-01,  3.32752731e-01,  3.80288836e-01,  4.27824940e-01,
    4.75361045e-01};
-        double[] y = {-0.01041473, -0.00961803, -0.00852592, -0.00726078, -0.00592679, -0.00460919,
+        double[] yvals = {-0.01041473, -0.00961803, -0.00852592, -0.00726078, -0.00592679, -0.00460919,
   -0.00337449, -0.00227133, -0.00133184, -0.00057331,  0.,          0.00061566,
    0.0007114,   0.00049971,  0.00022418,  0.00011907,  0.00037392,  0.0011027,
    0.00231606,  0.00389579,  0.00557028};
 
-        for (int i = 0; i < x.length; i++) {
-            System.out.println("x expected " + x[i] + " got " + transAber.fans.get(0).fan_x.get(i));
-            System.out.println("y expected " + y[i] + " got " + transAber.fans.get(0).fan_y.get(i));
+        for (int i = 0; i < xvals.length; i++) {
+            System.out.println("x expected " + xvals[i] + " got " + transAber.fans.get(0).fan_x.get(i));
+            System.out.println("y expected " + yvals[i] + " got " + transAber.fans.get(0).fan_y.get(i));
         }
 
     }
