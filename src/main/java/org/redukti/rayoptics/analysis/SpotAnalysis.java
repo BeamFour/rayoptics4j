@@ -36,7 +36,7 @@ public class SpotAnalysis {
 
     public static List<TraceGridByWvl> eval_rings(OpticalModel opt_model, int fi, Integer wl, int num_rays, TraceOptions trace_options) {
         var seq_model =  opt_model.seq_model;
-        return seq_model.trace_rings(SpotAnalysis::spot,fi,wl,num_rays,false,trace_options);
+        return seq_model.trace_rings(SpotAnalysis::spot,fi,wl, Integer.valueOf(num_rays),false,trace_options);
     }
 
     public static SpotAnalysisResult eval(OpticalModel opt_model, int num_rays, TraceOptions trace_options) {

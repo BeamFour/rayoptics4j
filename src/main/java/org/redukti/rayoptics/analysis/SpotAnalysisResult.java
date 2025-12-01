@@ -1,15 +1,18 @@
 package org.redukti.rayoptics.analysis;
 
+import org.redukti.mathlib.M;
 import org.redukti.mathlib.Vector3;
 import org.redukti.rayoptics.raytr.GridItem;
 import org.redukti.rayoptics.raytr.TraceGridByWvl;
 import org.redukti.rayoptics.specs.Field;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpotAnalysisResult {
-
+	private static DecimalFormat decimalFormat = M.decimal_format();
+	
     public static class SpotResultsByField {
         public Field fld;
         public Vector3 image_pt;
@@ -30,23 +33,31 @@ public class SpotAnalysisResult {
             int count = 0;
             for (int wl = 0; wl < trace_results.size(); wl++) {
                 var grids = trace_results.get(wl);
-                for (var grid: grids.grid) {
+                for (var grid : grids.grid) {
                     //System.out.println("pupil = " + grid.pupil.toString());
                     var l = grid.pupil.len();
                     //System.out.println("len = " + l);
                     if (l > max_radius) {
                         max_radius = l;
                     }
-                    mean_radius += (l*l);
+                    mean_radius += (l * l);
                 }
                 count += grids.grid.size();
             }
-            mean_radius = Math.sqrt(mean_radius/count);
+            mean_radius = Math.sqrt(mean_radius / count);
         }
 
         @Override
         public String toString() {
-            return "Field angle " + fld.y + "\n" + " mean radius " + mean_radius * 1000 + "\n" + "  max radius " + max_radius * 1000 + "\n";
+            return "Field " + fld + " mean radius " + get_mean_radius() + " max radius " + get_max_radius();
+        }
+
+        public double get_max_radius() {
+            return max_radius * 1000;
+        }
+
+        public double get_mean_radius() {
+            return mean_radius * 1000;
         }
     }
 
