@@ -18,7 +18,7 @@ public class TransverseRayAberrationAnalysis {
             var dist = foc / Lists.get(ray,-1).d.z;
             var defocused_pt = Lists.get(ray,-1).p.plus(Lists.get(ray,-1).d.times(dist));
             var t_abr = defocused_pt.minus(image_pt);
-            return Double.valueOf(t_abr.v(xy));
+            return t_abr.v(xy);
         }
         return null;
     }
