@@ -1,18 +1,14 @@
 package org.redukti.rayoptics.analysis;
 
-import org.redukti.mathlib.M;
 import org.redukti.mathlib.Vector3;
-import org.redukti.rayoptics.raytr.GridItem;
 import org.redukti.rayoptics.raytr.TraceGridByWvl;
 import org.redukti.rayoptics.specs.Field;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpotAnalysisResult {
-	private static DecimalFormat decimalFormat = M.decimal_format();
-	
+
     public static class SpotResultsByField {
         public Field fld;
         public Vector3 image_pt;
