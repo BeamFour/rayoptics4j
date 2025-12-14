@@ -377,7 +377,11 @@ public class WaveAbr {
         return opd;
     }
 
-    public static double distance_back_from_image_to_refsphere_alt(
+    /**
+     * Computes the optical path length back from image point back to reference sphere
+     * in the reverse direction of the ray
+     */
+    public static double distance_back_from_image_to_refsphere(
             RayPkg ray_pkg,
             ReferenceSphere ref_sphere,
             double refractive_index) {
@@ -410,42 +414,6 @@ public class WaveAbr {
         else if (t2 > 0) t = t2;
         else return Double.NaN;
 
-        return refractive_index * t;
-    }
-
-    /**
-     * Computes the optical path length back from image point back to reference sphere
-     * in the reverse direction of the ray
-     */
-    public static double distance_back_from_image_to_refsphere(
-            RayPkg ray_pkg,
-            ReferenceSphere ref_sphere,
-            double refractive_index) {
-        var xc = ref_sphere.image_pt.x;
-        var yc = ref_sphere.image_pt.y;
-        var zc = ref_sphere.image_pt.z;
-        var R = ref_sphere.ref_sphere_radius;
-        var rays_at_image = Lists.get(ray_pkg.ray,-1);
-        var xr = rays_at_image.p.x;
-        var yr = rays_at_image.p.y;
-        var zr = rays_at_image.p.z;
-        var L = -rays_at_image.d.x;
-        var M = -rays_at_image.d.y;
-        var N = -rays_at_image.d.z;
-        var a = L*L + M*M + N*N;
-        var b = 2 * (L * (xr - xc) + M * (yr - yc) + N * (zr - zc));
-        var c = (xr*xr
-                        + yr*yr
-                        + zr*zr
-                        - 2 * (xr * xc + yr * yc + zr * zc)
-                        + xc*xc
-                        + yc*yc
-                        + zc*zc
-                        - R*R);
-        var d = b*b - 4 * a * c;
-        d = d < 0 ?  0 : d;
-        var t = (-b - Math.sqrt(d)) / (2 * a);
-        t = t < 0 ? (-b + Math.sqrt(d)) / (2 * a): t;
         return refractive_index * t;
     }
 
