@@ -377,6 +377,42 @@ public class WaveAbr {
         return opd;
     }
 
+    public static double distance_back_from_image_to_refsphere_alt(
+            RayPkg ray_pkg,
+            ReferenceSphere ref_sphere,
+            double refractive_index) {
+
+        var c = ref_sphere.image_pt;
+        var ray = Lists.get(ray_pkg.ray, -1);
+
+        double ox = ray.p.x - c.x;
+        double oy = ray.p.y - c.y;
+        double oz = ray.p.z - c.z;
+
+        double dx = -ray.d.x;
+        double dy = -ray.d.y;
+        double dz = -ray.d.z;
+
+        double a = dx*dx + dy*dy + dz*dz;
+        double b = 2 * (dx*ox + dy*oy + dz*oz);
+        double cc = ox*ox + oy*oy + oz*oz - ref_sphere.ref_sphere_radius * ref_sphere.ref_sphere_radius;
+
+        double disc = b*b - 4*a*cc;
+        if (disc < 0) return Double.NaN;
+
+        double s = Math.sqrt(disc);
+        double t1 = (-b - s) / (2*a);
+        double t2 = (-b + s) / (2*a);
+
+        double t;
+        if (t1 > 0 && t2 > 0) t = Math.min(t1, t2);
+        else if (t1 > 0) t = t1;
+        else if (t2 > 0) t = t2;
+        else return Double.NaN;
+
+        return refractive_index * t;
+    }
+
     /**
      * Computes the optical path length back from image point back to reference sphere
      * in the reverse direction of the ray
