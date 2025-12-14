@@ -11,10 +11,9 @@ public class WavefrontAberrationAnalysisZ {
         var convert_to_waves = 1.0/opt_model.nm_to_sys_units(wvl);
         if (ray_pkg.ray != null) {
             var fod = opt_model.optical_spec.parax_data.fod;
-            var ops = WaveAbr.wave_abr_calc(opt_model,fod, fld, wvl, foc, ray_pkg,
-                    fld.chief_ray, fld.ref_sphere);
-            ops = ops * convert_to_waves;
-            return ops;
+            var opd = WaveAbr.calc_opd(opt_model,fod, fld, wvl, foc, ray_pkg);
+            opd = opd * convert_to_waves;
+            return opd;
         }
         return null;
     }

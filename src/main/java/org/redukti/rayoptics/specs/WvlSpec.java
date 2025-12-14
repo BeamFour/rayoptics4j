@@ -88,6 +88,13 @@ public class WvlSpec {
         return wavelengths[reference_wvl];
     }
 
+    public int index_of(double wvl) {
+        for (int i = 0; i < wavelengths.length; i++)
+            if (wavelengths[i] == wvl)
+                return i;
+        return -1;
+    }
+
     public void list_str(StringBuilder sb) {
         sb.append(String.format("central wavelength=%10.4f\n",wavelengths[reference_wvl]));
         sb.append("wavelength (weight) =");

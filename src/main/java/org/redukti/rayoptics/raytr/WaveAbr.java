@@ -377,14 +377,18 @@ public class WaveAbr {
         return opd;
     }
 
-    public static double _opd_image_to_xp(
+    /**
+     * Computes the optical path length back from image point back to reference sphere
+     * in the reverse direction of the ray
+     */
+    public static double distance_back_from_image_to_refsphere(
             RayPkg ray_pkg,
-            double xc,
-            double yc,
-            double zc,
-            double R,
-            double nd
-            ) {
+            ReferenceSphere ref_sphere,
+            double refractive_index) {
+        var xc = ref_sphere.image_pt.x;
+        var yc = ref_sphere.image_pt.y;
+        var zc = ref_sphere.image_pt.z;
+        var R = ref_sphere.ref_sphere_radius;
         var rays_at_image = Lists.get(ray_pkg.ray,-1);
         var xr = rays_at_image.p.x;
         var yr = rays_at_image.p.y;
@@ -406,28 +410,37 @@ public class WaveAbr {
         d = d < 0 ?  0 : d;
         var t = (-b - Math.sqrt(d)) / (2 * a);
         t = t < 0 ? (-b + Math.sqrt(d)) / (2 * a): t;
-        return nd * t;
+        return refractive_index * t;
     }
 
-    public static double optical_path_length(OpticalModel opm, RayPkg ray_pkg) {
+    /**
+     * Computes optical path length from object to image point
+     */
+    public static double optical_path_length(OpticalModel opm, RayPkg ray_pkg, int wl) {
         var sq = opm.seq_model;
         double opl = 0.0;
         for (int i = 0; i < ray_pkg.ray.size()-1; i++) {
-            var ray = ray_pkg.ray.get(i);
-            var before_ndx = sq.rndx.get(i)[0];
-            opl += (before_ndx * ray.dst);
+            var ray_seg = ray_pkg.ray.get(i);
+            var before_ndx = sq.rndx.get(i)[wl];
+            opl += (before_ndx * ray_seg.dst);
         }
         return opl;
     }
 
-    public static double wave_abr_calc(OpticalModel opm,FirstOrderData fod,Field fld,double wvl,double foc,RayPkg ray_pkg,ChiefRayPkg chief_ray_pkg,ReferenceSphere ref_sphere) {
-        double ref_op = optical_path_length(opm,chief_ray_pkg.chief_ray);
-        double ref_op_correction = _opd_image_to_xp(chief_ray_pkg.chief_ray,ref_sphere.image_pt.x,ref_sphere.image_pt.y,ref_sphere.image_pt.z,ref_sphere.ref_sphere_radius,fod.n_img);
-        double ray_op = optical_path_length(opm,ray_pkg);
-        double ray_op_correction = _opd_image_to_xp(ray_pkg,ref_sphere.image_pt.x,ref_sphere.image_pt.y,ref_sphere.image_pt.z,ref_sphere.ref_sphere_radius,fod.n_img);
-        double op_delta = (ref_op-ray_op);
-        double op_correction_delta = (ref_op_correction-ray_op_correction);
+    /**
+     * Calculate OPD as difference between the optical path length of chief ray vs given ray,
+     * the optical path length is from object to image plus back to reference sphere.
+     */
+    public static double calc_opd(OpticalModel opm, FirstOrderData fod, Field fld, double wvl, double foc, RayPkg ray_pkg) {
+        var chief_ray_pkg = fld.chief_ray;
+        var ref_sphere = fld.ref_sphere;
+        var wl = opm.optical_spec.wvls.index_of(wvl);
+        var ref_op = optical_path_length(opm,chief_ray_pkg.chief_ray,wl);
+        var ref_op_correction = distance_back_from_image_to_refsphere(chief_ray_pkg.chief_ray,ref_sphere,fod.n_img);
+        var ray_op = optical_path_length(opm,ray_pkg,wl);
+        var ray_op_correction = distance_back_from_image_to_refsphere(ray_pkg,ref_sphere,fod.n_img);
+        var op_delta = (ref_op-ray_op);
+        var op_correction_delta = (ref_op_correction-ray_op_correction);
         return op_delta + op_correction_delta;
     }
-
 }
