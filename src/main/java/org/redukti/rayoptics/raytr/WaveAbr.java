@@ -377,5 +377,57 @@ public class WaveAbr {
         return opd;
     }
 
+    public static double _opd_image_to_xp(
+            RayPkg ray_pkg,
+            double xc,
+            double yc,
+            double zc,
+            double R,
+            double nd
+            ) {
+        var rays_at_image = Lists.get(ray_pkg.ray,-1);
+        var xr = rays_at_image.p.x;
+        var yr = rays_at_image.p.y;
+        var zr = rays_at_image.p.z;
+        var L = -rays_at_image.d.x;
+        var M = -rays_at_image.d.y;
+        var N = -rays_at_image.d.z;
+        var a = L*L + M*M + N*N;
+        var b = 2 * (L * (xr - xc) + M * (yr - yc) + N * (zr - zc));
+        var c = (xr*xr
+                        + yr*yr
+                        + zr*zr
+                        - 2 * (xr * xc + yr * yc + zr * zc)
+                        + xc*xc
+                        + yc*yc
+                        + zc*zc
+                        - R*R);
+        var d = b*b - 4 * a * c;
+        d = d < 0 ?  0 : d;
+        var t = (-b - Math.sqrt(d)) / (2 * a);
+        t = t < 0 ? (-b + Math.sqrt(d)) / (2 * a): t;
+        return nd * t;
+    }
+
+    public static double optical_path_length(OpticalModel opm, RayPkg ray_pkg) {
+        var sq = opm.seq_model;
+        double opl = 0.0;
+        for (int i = 0; i < ray_pkg.ray.size()-1; i++) {
+            var ray = ray_pkg.ray.get(i);
+            var before_ndx = sq.rndx.get(i)[0];
+            opl += (before_ndx * ray.dst);
+        }
+        return opl;
+    }
+
+    public static double wave_abr_calc(OpticalModel opm,FirstOrderData fod,Field fld,double wvl,double foc,RayPkg ray_pkg,ChiefRayPkg chief_ray_pkg,ReferenceSphere ref_sphere) {
+        double ref_op = optical_path_length(opm,chief_ray_pkg.chief_ray);
+        double ref_op_correction = _opd_image_to_xp(chief_ray_pkg.chief_ray,ref_sphere.image_pt.x,ref_sphere.image_pt.y,ref_sphere.image_pt.z,ref_sphere.ref_sphere_radius,fod.n_img);
+        double ray_op = optical_path_length(opm,ray_pkg);
+        double ray_op_correction = _opd_image_to_xp(ray_pkg,ref_sphere.image_pt.x,ref_sphere.image_pt.y,ref_sphere.image_pt.z,ref_sphere.ref_sphere_radius,fod.n_img);
+        double op_delta = (ref_op-ray_op);
+        double op_correction_delta = (ref_op_correction-ray_op_correction);
+        return op_delta + op_correction_delta;
+    }
 
 }
