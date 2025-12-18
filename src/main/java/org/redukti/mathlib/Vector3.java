@@ -24,6 +24,7 @@ public class Vector3 {
         this.y = y;
         this.z = z;
     }
+    public Vector3(double v) {this(v,v,v);}
 
     public Vector3 deg2rad() {
         return new Vector3(Math.toRadians(x), Math.toRadians(y), Math.toRadians(z));
