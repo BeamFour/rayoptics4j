@@ -129,6 +129,6 @@ public class Nikkor58mmTest3 {
         //VigCalc.set_vig(opm,true);
         //opm.update_model();
         var transAber = TransverseRayAberrationAnalysis.eval_abr_fan(opm,0,1,21,new TraceOptions());
-        var spot = SpotAnalysis.eval(opm,21, new TraceOptions());
+        var spot = SpotAnalysis.eval(opm,21, new TraceOptions(),true);
     }
 }
