@@ -8,7 +8,7 @@ public class MTFResultByFreq {
     public double[] sag_mtf_by_field;
     public double[] tan_mtf_by_field;
 
-    public MTFResultByFreq(List<PolyChromaticGeometricMTF> mtfs_by_field, int freq) {
+    public MTFResultByFreq(List<PolyMTF> mtfs_by_field, int freq) {
         this.freq = freq;
         sag_mtf_by_field = new double[mtfs_by_field.size()];
         tan_mtf_by_field = new double[mtfs_by_field.size()];

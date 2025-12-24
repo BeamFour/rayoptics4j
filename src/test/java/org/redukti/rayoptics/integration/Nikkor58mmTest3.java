@@ -2,6 +2,7 @@ package org.redukti.rayoptics.integration;
 
 import org.junit.jupiter.api.Test;
 import org.redukti.rayoptics.analysis.SpotAnalysis;
+import org.redukti.rayoptics.analysis.SpotOptions;
 import org.redukti.rayoptics.analysis.TransverseRayAberrationAnalysis;
 import org.redukti.rayoptics.elem.profiles.EvenPolynomial;
 import org.redukti.rayoptics.optical.OpticalModel;
@@ -129,6 +130,6 @@ public class Nikkor58mmTest3 {
         //VigCalc.set_vig(opm,true);
         //opm.update_model();
         var transAber = TransverseRayAberrationAnalysis.eval_abr_fan(opm,0,1,21,new TraceOptions());
-        var spot = SpotAnalysis.eval(opm,21, new TraceOptions(),true);
+        var spot = SpotAnalysis.eval(opm,new SpotOptions());
     }
 }
