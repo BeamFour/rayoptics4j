@@ -68,7 +68,7 @@ public class VigCalc {
         if (stop_surf != null && include_list.contains(stop_surf)) {
             Double max_ap = max_aperture_at_surf(List.of(rayset.get(0)),stop_surf);
             if (max_ap != null) {
-                //System.out.println("Setting stop aperture to " + max_ap);
+                System.out.println("Setting stop aperture to " + max_ap);
                 sm.ifcs.get(stop_surf).set_max_aperture(max_ap);
             }
         }
@@ -109,6 +109,9 @@ public class VigCalc {
             var wvl = fld_wvl_foc.second;
             calc_vignetting_for_field(opm,fld,wvl,use_bisection,null);
         }
+    }
+    public static void set_vig(OpticalModel opm) {
+        set_vig(opm,null);
     }
 
     /**

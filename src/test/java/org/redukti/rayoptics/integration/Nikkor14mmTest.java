@@ -141,7 +141,7 @@ public class Nikkor14mmTest {
         Assertions.assertEquals(1.000, fod.n_img, 0.001);
         Assertions.assertEquals(2.849, fod.opt_inv, 0.001);
 
-        VigCalc.set_vig(opm,false);
+        VigCalc.set_vig(opm);
         opm.update_model();
 
         double[] cr_expected_op_delta = { 129.68211720000002,  144.5443500746337 };
