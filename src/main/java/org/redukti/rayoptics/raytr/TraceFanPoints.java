@@ -1,3 +1,6 @@
+// Copyright 2017-2025 Michael J. Hayford
+// Original software https://github.com/mjhoptics/ray-optics
+// Java version by Dibyendu Majumdar
 package org.redukti.rayoptics.raytr;
 
 import java.util.List;
@@ -16,9 +19,15 @@ public class TraceFanPoints {
      */
     public final List<Double> fan_y;
 
-    public TraceFanPoints(double wvl, List<Double> fan_x, List<Double> fan_y) {
+    /**
+     * The actual rays
+     */
+    public final List<GridItem> fan;
+
+    public TraceFanPoints(double wvl, List<Double> fan_x, List<Double> fan_y, List<GridItem> fan) {
         this.wvl = wvl;
         this.fan_x = fan_x;
         this.fan_y = fan_y;
+        this.fan = fan;
     }
 }

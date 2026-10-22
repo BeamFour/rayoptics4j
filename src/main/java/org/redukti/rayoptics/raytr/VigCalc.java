@@ -17,11 +17,19 @@ import org.redukti.rayoptics.specs.ValueKey;
 import org.redukti.rayoptics.util.Lists;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 // Vignetting and clear aperture setting operations
 public class VigCalc {
+
+    private static final Logger logger = Logger.getLogger(VigCalc.class.getName());
+
+    // label for coordinate chooser
+    private static final String xy_str = "xy";
 
     public static Double max_aperture_at_surf(List<List<RayPkg>> rayset, int i) {
         double max_ap = -1.0e+10;
@@ -68,10 +76,8 @@ public class VigCalc {
         var stop_surf = sm.stop_surface;
         if (stop_surf != null && include_list.contains(stop_surf)) {
             Double max_ap = max_aperture_at_surf(List.of(rayset.get(0)),stop_surf);
-            if (max_ap != null) {
-                System.out.println("Setting stop aperture to " + max_ap);
+            if (max_ap != null)
                 sm.ifcs.get(stop_surf).set_max_aperture(max_ap);
-            }
         }
         for (var i: include_list) {
             if (!Objects.equals(i,stop_surf)) {
@@ -95,8 +101,16 @@ public class VigCalc {
      *     :class:`~.elements.ElementModel` via
      *     :meth:`~.elements.ElementModel.sync_to_seq`.
      */
+    public static void set_ape(OpticalModel opm, List<Integer> avoid_list, List<Integer> include_list) {
+        set_clear_apertures(opm, avoid_list, include_list);
+        // Upstream follows this with em.sync_to_seq(sm) to push the new
+        // apertures into the element model. Beam43 needs no equivalent: its
+        // layout reads Interface.max_aperture and surface_od() live at render
+        // time rather than caching them, so there is nothing to go stale.
+    }
+
     public static void set_ape(OpticalModel opm) {
-        set_clear_apertures(opm,null,null);
+        set_ape(opm, null, null);
     }
 
     /**
@@ -108,6 +122,8 @@ public class VigCalc {
             var fld_wvl_foc = osp.lookup_fld_wvl_focus(fi);
             var fld = fld_wvl_foc.first;
             var wvl = fld_wvl_foc.second;
+            if (logger.isLoggable(Level.FINE))
+                logger.fine("set vig field " + fi + ":");
             calc_vignetting_for_field(opm,fld,wvl,use_bisection,null);
         }
     }
@@ -152,12 +168,16 @@ public class VigCalc {
         var stop_radius = Lists.get(sm.ifcs,idx_stop).surface_od();
         var start_coords = iterate_pupil_ray(opm,sm.stop_surface,1,1.0,stop_radius,fld_0,cwl);
 
+        if (logger.isLoggable(Level.FINE))
+            logger.fine(String.format(Locale.ROOT, "set_pupil edge of stop coords: %8.4f %8.4f",
+                    start_coords.v(0), start_coords.v(1)));
+
         // trace the real axial marginal ray
         var options = new TraceOptions();
         options.output_filter = null;
         options.rayerr_filter = "full";
         options.apply_vignetting = false;
-        options.check_apertures = true;
+        options.check_apertures = false;
         var ray_result = Trace.trace_safe(opm,start_coords,fld_0,cwl,options);
         var ray_pkg = ray_result.pkg;
         var ray_err = ray_result.err;
@@ -171,7 +191,8 @@ public class VigCalc {
         var fod = parax_data.fod;
         if (use_parax) {
             var scale_ratio = stop_radius/ax_ray.get(idx_stop).ht;
-            //logger.debug(f"{scale_ratio=:8.5f} (parax)")
+            if (logger.isLoggable(Level.FINE))
+                logger.fine(String.format(Locale.ROOT, "scale_ratio=%8.5f (parax)", scale_ratio));
             if (obj_img_key == ImageKey.Object) {
                 if (pupil_spec == ValueKey.EPD) {
                     osp.pupil.value = scale_ratio * (2 * fod.enp_radius);
@@ -207,6 +228,8 @@ public class VigCalc {
         }
         else {
             var scale_ratio = ray_pkg.ray.get(1).p.y/ax_ray.get(1).ht;
+            if (logger.isLoggable(Level.FINE))
+                logger.fine(String.format(Locale.ROOT, "scale_ratio=%8.5f", scale_ratio));
             if (obj_img_key == ImageKey.Object) {
                 if (pupil_spec == ValueKey.EPD) {
                     var rs1 = ray_pkg.ray.get(1);
@@ -248,12 +271,19 @@ public class VigCalc {
         var clipped_ray_err = clipped_rr.err;
         if (clipped_ray_err != null) {
             if (clipped_ray_err instanceof TraceRayBlockedException)
-                System.err.println("Axial bundle limited by surface " + clipped_ray_err.surf + " not stop surface.");
+                logger.warning("Axial bundle limited by surface " + clipped_ray_err.surf + ", not stop surface.");
         }
         if (!Objects.equals(osp.pupil.value,pupil_value_orig)) {
             opm.update_model();
-            set_vig(opm,null);
         }
+        // Always establish vignetting, even when the pupil value was already
+        // correct. Skipping is only safe when earlier factors can stand in, and
+        // set_pupil is called on freshly built models where there are none -
+        // the factors would silently stay at zero. Callers cannot tell that
+        // apart from a genuinely unvignetted system: contrast sampling in
+        // particular would then take the full pupil as available and, since it
+        // traces without aperture checking, optimize light the lens blocks.
+        set_vig(opm,null);
     }
     public static void set_pupil(OpticalModel opm) {
         set_pupil(opm,false);
@@ -334,6 +364,9 @@ public class VigCalc {
             var p = Lists.get(ray_pkg.ray,indx).p;
             var r_ray = Math.copySign(Math.sqrt(p.x*p.x + p.y*p.y), r_target);
             var delta = r_ray - r_target;
+            if (logger.isLoggable(Level.FINE))
+                logger.fine(String.format(Locale.ROOT, "  xy_coord=%8.5f   r_ray=%8.5f    delta=%9.2g",
+                        xy_coord, r_ray, delta));
             return delta;
         }
     }
@@ -364,6 +397,9 @@ public class VigCalc {
             Field fld,
             double wvl,
             Integer max_iter_count) {
+        if (logger.isLoggable(Level.FINE))
+            logger.fine(String.format(Locale.ROOT, "fld=%5.2f, [%5.2f, %5.2f]",
+                    fld.yf(), start_dir.v(0), start_dir.v(1)));
         if (max_iter_count == null) max_iter_count = 50;
 
         var rel_p1 = start_dir;
@@ -389,9 +425,9 @@ public class VigCalc {
                     var p = Lists.get(ray_pkg.ray, clip_indx).p;
                     var r_ray = Math.copySign(Math.sqrt(p.x * p.x + p.y * p.y), r_target.v(xy));
                     var r_error = r_ray - r_target.v(xy);
-//                    logger.debug(f" C {xy_str[xy]} = {rel_p1[xy]:10.6f}:   "
-//                            f"blocked at {clip_indx}, del={r_error:8.1e}, "
-//                            "exiting")
+                    if (logger.isLoggable(Level.FINE))
+                        logger.fine(String.format(Locale.ROOT, " C %s = %10.6f:   blocked at %d, del=%8.1e, exiting",
+                                xy_str.charAt(xy), rel_p1.v(xy), clip_indx, r_error));
                     still_iterating = false;
                 }
                 else {
@@ -402,9 +438,9 @@ public class VigCalc {
                     indx = stop_indx = sm.stop_surface;
                     if (stop_indx != null) {
                         var r_target = Lists.get(sm.ifcs,stop_indx).edge_pt_target(start_dir);
-//                        logger.debug(f" D {xy_str[xy]} = {rel_p1[xy]:10.6f}:   "
-//                                f"passed first time, iterate to edge of stop, "
-//                                f"ifcs[{stop_indx}]")
+                        if (logger.isLoggable(Level.FINE))
+                            logger.fine(String.format(Locale.ROOT, " D %s = %10.6f:   passed first time, iterate to edge of stop, ifcs[%d]",
+                                    xy_str.charAt(xy), rel_p1.v(xy), stop_indx));
                         rel_p1 = iterate_pupil_ray(opm,indx,xy,rel_p1.v(xy),r_target.v(xy),fld,wvl);
                         still_iterating = true;
                         clip_indx = indx;
@@ -421,27 +457,31 @@ public class VigCalc {
                         var p = Lists.get(ray_pkg.ray, clip_indx).p;
                         var r_ray = Math.copySign(Math.sqrt(p.x*p.x + p.y*p.y), r_target.v(xy));
                         var r_error = r_ray - r_target.v(xy);
-//                        logger.debug(f" A {xy_str[xy]} = {rel_p1[xy]:10.6f}:   "
-//                                f"blocked at {clip_indx}, del={r_error:8.1e}, "
-//                                "exiting")
+                        if (logger.isLoggable(Level.FINE))
+                            logger.fine(String.format(Locale.ROOT, " A %s = %10.6f:   blocked at %d, del=%8.1e, exiting",
+                                    xy_str.charAt(xy), rel_p1.v(xy), clip_indx, r_error));
                     }
                     catch (IndexOutOfBoundsException e) {
-//                        logger.debug(f" A' {xy_str[xy]} = {rel_p1[xy]:10.6f}:   "
-//                                f"blocked at {clip_indx}, "
-//                                "exiting")
+                        if (logger.isLoggable(Level.FINE))
+                            logger.fine(String.format(Locale.ROOT, " A %s = %10.6f:   index error at clip_indx=%d, exiting",
+                                    xy_str.charAt(xy), rel_p1.v(xy), clip_indx));
                     }
                     still_iterating = false;
                 }
                 else {
                     var r_target = Lists.get(sm.ifcs,indx).edge_pt_target(start_dir);
-                    // If we missed the first surface, use bisection to bracket
+                    // If we missed a surface, use bisection to bracket
                     // the edge. Use the result to start the newton iteration to
                     // quickly find the edge.
-                    if (ray_error instanceof TraceMissedSurfaceException missedSurfaceException &&
-                        missedSurfaceException.surf == 1) {
+                    if (ray_error instanceof TraceMissedSurfaceException) {
+                        if (logger.isLoggable(Level.FINE))
+                            logger.fine(" Missed surface " + indx + ", use bisection to find edge");
                         var edge = Wideangle.find_edge(new Fn_r_pupil_coordinate(opm,indx,xy,fld,wvl,r_target.v(xy)),0.0,rel_p1.v(xy),null);
                         rel_p1 = rel_p1.set(xy,edge.z_enp);
                     }
+                    if (logger.isLoggable(Level.FINE))
+                        logger.fine(String.format(Locale.ROOT, " B %s = %10.6f:   blocked at %d. target=%9.6f",
+                                xy_str.charAt(xy), rel_p1.v(xy), indx, r_target.v(xy)));
                     rel_p1 = iterate_pupil_ray(opm,indx,xy,rel_p1.v(xy),r_target.v(xy),fld,wvl);
                     still_iterating = true;
                     clip_indx = indx;
@@ -449,8 +489,9 @@ public class VigCalc {
             }
         }
         var vig = 1.0 - (rel_p1.v(xy)/start_dir.v(xy));
-//        logger.info(f" ray: ({start_dir[0]:2.0f}, {start_dir[1]:2.0f}), "
-//                f"vig={vig:8.4f}, limited at ifcs[{clip_indx}]")
+        if (logger.isLoggable(Level.CONFIG))
+            logger.config(String.format(Locale.ROOT, " ray: (%2.0f, %2.0f), vig=%8.4f, limited at ifcs[%d]",
+                    start_dir.v(0), start_dir.v(1), vig, clip_indx));
         return new VigResult(vig,clip_indx,ray_pkg);
     }
 
@@ -480,8 +521,9 @@ public class VigCalc {
             Field fld,
             double wvl,
             Integer max_iter_count) {
-//        logger.debug(f"fld={fld.yf:5.2f}, [{start_dir[0]:5.2f}, "
-//                f"{start_dir[1]:5.2f}]")
+        if (logger.isLoggable(Level.FINE))
+            logger.fine(String.format(Locale.ROOT, "fld=%5.2f, [%5.2f, %5.2f]",
+                    fld.yf(), start_dir.v(0), start_dir.v(1)));
         if (max_iter_count == null) max_iter_count = 10;
 
         var rel_p1 = start_dir;
@@ -500,17 +542,21 @@ public class VigCalc {
                 options.pt_inside_fuzz=1e-4;
                 ray_pkg = Trace.trace_base(opm,rel_p1.as_array(),fld,wvl,options);
                 rel_p1 = start_dir.times(step_size).plus(rel_p1);
+                if (logger.isLoggable(Level.FINE))
+                    logger.fine(String.format(Locale.ROOT, "%s = %10.6f: passed", xy_str.charAt(xy), rel_p1.v(xy)));
             }
             catch (TraceException ray_error) {
                 ray_pkg = ray_error.ray_pkg;
                 clip_indx = ray_error.surf;
                 rel_p1 = start_dir.times(-step_size).plus(rel_p1);
-//                logger.debug(f"{xy_str[xy]} = {rel_p1[xy]:10.6f}: "
-//                        f"blocked at {clip_indx}")
+                if (logger.isLoggable(Level.FINE))
+                    logger.fine(String.format(Locale.ROOT, "%s = %10.6f: blocked at %d",
+                            xy_str.charAt(xy), rel_p1.v(xy), clip_indx));
             }
         }
         var vig = 1.0 - (rel_p1.v(xy)/start_dir.v(xy));
-//        logger.debug(f"   {vig=:7.4f}, {clip_indx=}")
+        if (logger.isLoggable(Level.FINE))
+            logger.fine(String.format(Locale.ROOT, "   vig=%7.4f, clip_indx=%d", vig, clip_indx));
         return new VigResult(vig,clip_indx,ray_pkg);
     }
 
@@ -558,9 +604,9 @@ public class VigCalc {
             var p = Lists.get(ray_pkg.ray,indx).p;
             var r_ray = Math.copySign(Math.sqrt(p.x*p.x + p.y*p.y), r_target);
             var delta = r_ray - r_target;
-//            logger.debug(f"  {xy_coord=:8.5f}   {r_ray=:8.5f}    "
-//                    f"delta={delta:9.2g}")
-            //System.out.println(String.format("   xy_coord=%8.5f   r_ray=%8.5f   delta=%9.2g",xy_coord,r_ray,delta));
+            if (logger.isLoggable(Level.FINE))
+                logger.fine(String.format(Locale.ROOT, "  xy_coord=%8.5f   r_ray=%8.5f    delta=%9.2g",
+                        xy_coord, r_ray, delta));
             return delta;
         }
     }
@@ -589,13 +635,17 @@ public class VigCalc {
         Vector2 start_coord = Vector2.vector2_0;
         double start_r = 0;
         if (indx != null) {
-            var objective_fn = new R_Pupil_Coordinate(opt_model,indx,xy,fld,wvl,r_target);
             try {
-                start_r = SecantSolver.find_root(objective_fn, start_r0, 50, 1e-6).root;
+                // set `x1` so that search goes inward from the edge.
+                var eps = 1e-4;
+                var p1 = start_r0 * (1 - eps);
+                var objective_fn = new R_Pupil_Coordinate(opt_model,indx,xy,fld,wvl,r_target);
+                start_r = SecantSolver.find_root(objective_fn, start_r0, p1, 50, 1e-6).root;
             }
             catch (TraceException rt_err) {
-//                logger.debug(f"  {type(rt_err).__name__}: surf={rt_err.surf}    "
-//                        f"rel_p1={rt_err.rel_p1[xy]=:8.5f}   ")
+                if (logger.isLoggable(Level.FINE))
+                    logger.fine(String.format(Locale.ROOT, "  %s: surf=%d    rel_p1=rt_err.rel_p1[xy]=%8.5f   ",
+                            rt_err.getClass().getSimpleName(), rt_err.surf, rt_err.rel_p1.v(xy)));
                 start_r = 0.9*rt_err.rel_p1.v(xy);
             }
             return start_coord.set(xy,start_r);

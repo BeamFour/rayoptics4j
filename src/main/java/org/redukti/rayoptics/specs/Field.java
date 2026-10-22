@@ -86,29 +86,50 @@ public class Field {
         y *= scale_factor;
     }
 
+    /**
+     * Scale relative pupil coordinates by this field's vignetting factors,
+     * returning a new array. The argument is not modified.
+     * <p>
+     * This differs from upstream, deliberately. Upstream writes
+     * {@code vig_pupil = pupil[:]}, which for a numpy array is a view rather
+     * than a copy, so scaling {@code vig_pupil} also scales the caller's array
+     * in place. Callers that read their pupil array back after tracing see the
+     * vignetted value there: {@code analyses.trace_ray_fan} records the pupil
+     * after calling {@code trace_safe} and so reports vignetted fan
+     * coordinates, where this implementation reports the nominal ones.
+     * <p>
+     * The rays traced are the same either way - only what a caller observes in
+     * its own array differs - but it is visible when comparing fan data against
+     * upstream, where a first ray at nominal -1.0 shows up there as
+     * -1 * (1 - vlx). See tools/src/main/python/README.md.
+     *
+     * @param pupil relative pupil coordinates, unmodified by this call
+     * @return a new array with the vignetting factors applied
+     */
     public double[] apply_vignetting(double[] pupil) {
         double[] vig_pupil = Arrays.copyOf(pupil, pupil.length);
-        if (pupil[0] < 0.0) {
-            if (vlx != 0.0) {
-                vig_pupil[0] *= (1.0 - vlx);
-            }
-        }
-        else {
-            if (vux != 0.0) {
-                vig_pupil[0] *= (1.0 - vux);
-            }
-        }
-        if (pupil[1] < 0.0) {
-            if (vly != 0.0) {
-                vig_pupil[1] *= (1.0 - vly);
-            }
-        }
-        else {
-            if (vuy != 0.0) {
-                vig_pupil[1] *= (1.0 - vuy);
-            }
-        }
+        vig_pupil[0] *= vignetting_scale_x(pupil[0]);
+        vig_pupil[1] *= vignetting_scale_y(pupil[1]);
         return vig_pupil;
+    }
+
+    /**
+     * Factor by which {@link #apply_vignetting} scales an x pupil coordinate.
+     * The upper and lower factors differ, so the scale depends on the sign of
+     * the coordinate and the map has a kink at the axis.
+     */
+    public double vignetting_scale_x(double x) {
+        return vignetting_scale(x, vlx, vux);
+    }
+
+    /** Factor by which {@link #apply_vignetting} scales a y pupil coordinate. */
+    public double vignetting_scale_y(double y) {
+        return vignetting_scale(y, vly, vuy);
+    }
+
+    private static double vignetting_scale(double coordinate, double lower, double upper) {
+        double factor = coordinate < 0.0 ? lower : upper;
+        return factor == 0.0 ? 1.0 : 1.0 - factor;
     }
 
     /**

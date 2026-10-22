@@ -2,11 +2,9 @@
 // Original software https://github.com/mjhoptics/ray-optics
 // Java version by Dibyendu Majumdar
 package org.redukti.rayoptics.elem.surface;
-
 import org.redukti.mathlib.Matrix3;
 import org.redukti.mathlib.Vector3;
 import org.redukti.rayoptics.math.Tfm3d;
-import org.redukti.rayoptics.util.Pair;
 
 import java.util.Objects;
 
@@ -52,7 +50,7 @@ public class DecenterData {
 
     public void update() {
         if (euler.any())
-            rot_mat = Matrix3.euler2mat(convertl2r().deg2rad());
+            rot_mat =  Matrix3.euler2mat_rxyz(convertl2r().deg2rad());
         else
             rot_mat = null;
     }

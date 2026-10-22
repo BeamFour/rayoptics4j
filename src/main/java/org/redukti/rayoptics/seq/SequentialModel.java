@@ -18,6 +18,8 @@ import org.redukti.rayoptics.util.Pair;
 import org.redukti.rayoptics.util.ZDir;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Manager class for a sequential optical model
@@ -62,6 +64,8 @@ import java.util.*;
  * cur_surface (int): insertion index for next interface
  */
 public class SequentialModel {
+
+    private static final Logger logger = Logger.getLogger(SequentialModel.class.getName());
 
     public OpticalModel opt_model;
     public List<Interface> ifcs = new ArrayList<>();
@@ -454,6 +458,8 @@ public class SequentialModel {
 
         if (surfs.length == 1) {
             var idx = surfs[0];
+            if (logger.isLoggable(Level.FINE))
+                logger.fine("scale_factor=" + scale_factor + ", idx=" + idx);
             ifcs.get(idx).apply_scale_factor(scale_factor);
             if (idx < gaps.size())
                 gaps.get(idx).apply_scale_factor(scale_factor);
@@ -461,11 +467,18 @@ public class SequentialModel {
         else if (surfs.length == 2) {
             var idx1 = surfs[0];
             var idx2 = surfs[1];
+            if (logger.isLoggable(Level.FINE))
+                logger.fine("scale_factor=" + scale_factor + ", idx1=" + idx1 + ", idx2=" + idx2);
             for (int i = idx1; i < idx2+1; i++) {
                 try {
                     ifcs.get(i).apply_scale_factor(scale_factor);
-                    if (i < idx2)
+                    if (logger.isLoggable(Level.FINE))
+                        logger.fine(i + ": ifc");
+                    if (i < idx2) {
                         gaps.get(i).apply_scale_factor(scale_factor);
+                        if (logger.isLoggable(Level.FINE))
+                            logger.fine(i + ": gap");
+                    }
                 }
                 catch (IndexOutOfBoundsException e) {
                     break;
@@ -654,7 +667,7 @@ public class SequentialModel {
         ZDir z_dir = ZDir.PROPAGATE_RIGHT;
 
         if (surf_data.refractive_index != null) {
-            Glass g = surf_data.glass_name != null ? Glass.glass_by_name(surf_data.glass_name) : null;
+            Glass g = surf_data.glass_name != null ? Glass.glass_by_catalog_name(surf_data.catalog_name, surf_data.glass_name) : null;
             if (surf_data.v_number == null) {
                 if (surf_data.refractive_index == 1.0)
                     mat = new Air();
@@ -709,7 +722,9 @@ public class SequentialModel {
 
         @Override
         public GridItem apply(Vector2 p, RayPkg pkg) {
-            return fct.apply(p,wi,pkg,fld,wvl,foc);
+            if (fct != null)
+                return fct.apply(p,wi,pkg,fld,wvl,foc);
+            return new GridItem(p,pkg);
         }
     }
 
@@ -732,7 +747,9 @@ public class SequentialModel {
 
         @Override
         public GridItem apply(Vector2 p, RayPkg pkg) {
-            var result = fct.apply(opt_model,p,wi,pkg,fld,wvl,foc);
+            Double result = (fct == null)
+                            ? null
+                            : fct.apply(opt_model,p,wi,pkg,fld,wvl,foc);
             if (result != null)
                 return new GridItem(p, pkg, result);
             else
@@ -748,6 +765,7 @@ public class SequentialModel {
             int fi,
             int xy,
             int num_rays,
+            boolean append_if_none,
             TraceOptions trace_options)
     {
         var osp = opt_model.optical_spec;
@@ -782,7 +800,7 @@ public class SequentialModel {
             var cr_pkg = coords.chief_ray_pkg;
             fld.chief_ray = cr_pkg;
             fld.ref_sphere = rs_pkg;
-            var fan = Trace.trace_fan(opt_model,fan_def,fld,wvl,foc,new FanFilter(opt_model,xy,fld,wvl,foc,fct),trace_options);
+            var fan = Trace.trace_fan(opt_model,fan_def,fld,wvl,foc,append_if_none,new FanFilter(opt_model,xy,fld,wvl,foc,fct),trace_options);
             var f_x = new ArrayList<Double>();
             var f_y = new ArrayList<Double>();
             for (int i = 0; i < fan.size(); i++) {
@@ -792,10 +810,10 @@ public class SequentialModel {
                 f_y.add(y_val);
                 if (Math.abs(p.v(xy)) > max_rho_val)
                     max_rho_val = Math.abs(p.v(xy));
-                if (Math.abs(y_val) > max_y_val)
+                if (y_val != null && Math.abs(y_val) > max_y_val)
                     max_y_val = Math.abs(y_val);
             }
-            fans.add(new TraceFanPoints(wvl,f_x,f_y));
+            fans.add(new TraceFanPoints(wvl,f_x,f_y,fan));
         }
         return new TraceFanResult(fld,fi,xy,fans,max_rho_val,max_y_val);
     }

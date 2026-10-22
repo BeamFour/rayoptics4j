@@ -13,11 +13,14 @@ import org.redukti.rayoptics.specs.Coord;
 import org.redukti.rayoptics.specs.Field;
 import org.redukti.rayoptics.specs.FieldSpec;
 import org.redukti.rayoptics.util.Lists;
-import org.redukti.rayoptics.util.Pair;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Trace {
+
+    private static final Logger logger = Logger.getLogger(Trace.class.getName());
 
     /**
      * Trace a single ray via pupil, field and wavelength specs.
@@ -160,12 +163,6 @@ public class Trace {
      * - **op_delta** - optical path wrt equally inclined chords to the
      * optical axis
      * - **wvl** - wavelength (in nm) that the ray was traced in
-     *
-     * @param seq_model
-     * @param pt0
-     * @param dir0
-     * @param wvl
-     * @return
      */
     public static RayPkg trace(SequentialModel seq_model, Vector3 pt0, Vector3 dir0, double wvl, TraceOptions trace_options) {
         var options = new RayTraceOptions(trace_options);
@@ -225,8 +222,7 @@ public class Trace {
         // if wide_angle, don't try to intercept object and don't disallow
         // propagation against z_dir; this will be the case for rays exceeding
         // 90 degrees at the first surface.
-        var options = new RayTraceOptions();
-        options.check_apertures = trace_options.check_apertures;
+        var options = new RayTraceOptions(trace_options);
         if (opt_model.optical_spec.fov.is_wide_angle)
             options.intersect_obj = false;
         else {
@@ -266,12 +262,14 @@ public class Trace {
             if (not_wa && dir0.z * seq_model.z_dir.get(0).value < 0)
                 dir0 = dir0.negate();
 
-            RayPkg pkg = null;
+            RayPkg pkg;
             try {
                 pkg = RayTrace.trace(seq_model, pt0, dir0, wvl);
                 rr.pkg = pkg;
                 rr.err = null;
             } catch (TraceException ray_error) {
+                if (logger.isLoggable(Level.FINE))
+                    logger.fine("ray_error: \"" + ray_error.getClass().getSimpleName() + "\", ray_error.surf=" + ray_error.surf);
                 pkg = ray_error.ray_pkg;
                 rr.pkg = ray_error.ray_pkg;
                 rr.err = ray_error;
@@ -300,106 +298,6 @@ public class Trace {
         }
     }
 
-    /* Solver for use in LMLSolver */
-    static class ObjectiveFunction extends BaseObjectiveFunction implements LMLFunction {
-
-        private final double[][] jac = new double[2][2];
-        private final double[] resid = {0, 0};
-        private final double[] dDelta = {1E-6, 1E-6};
-        private final double[] point = {0, 0}; // Actual x,y values
-
-        final double[] xy_target; // target x,y values
-
-        public ObjectiveFunction(SequentialModel seq_model, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa, RayResult rr) {
-            super(seq_model, ifcx, pt0, dist, wvl, not_wa, rr);
-            this.xy_target = xy_target;
-        }
-
-        @Override
-        public double computeResiduals() {
-            RaySeg seg = eval(point[0], point[1]);
-            double[] p = {seg.p.x, seg.p.y};
-            double sos = 0.0;
-            for (int i = 0; i < p.length; i++) {
-                resid[i] = xy_target[i] - p[i];
-                sos += (resid[i] * resid[i]);
-            }
-            //return Math.sqrt(sos / p.length);
-            return sos;
-        }
-
-        @Override
-        public boolean buildJacobian()             // Uses current vector parms[].
-        // If current parms[] is bad, returns false.
-        // False should trigger an explanation.
-        // Called by LMray.iLMiter().
-        {
-            final int nadj = 2;
-            final int ngoals = 2;
-            double delta[] = new double[nadj];
-            double d = 0;
-            for (int j = 0; j < nadj; j++) {
-                for (int k = 0; k < nadj; k++)
-                    delta[k] = (k == j) ? dDelta[j] : 0.0;
-
-                d = nudge(delta); // resid at pplus
-                if (d == LMLSolver.BIGVAL) {
-                    //badray = true;
-                    return false;
-                }
-                for (int i = 0; i < ngoals; i++)
-                    jac[i][j] = getResidual(i);
-
-                for (int k = 0; k < nadj; k++)
-                    delta[k] = (k == j) ? -2.0 * dDelta[j] : 0.0;
-
-                d = nudge(delta); // resid at pminus
-                if (d == LMLSolver.BIGVAL) {
-                    //badray = true;
-                    return false;
-                }
-
-                for (int i = 0; i < ngoals; i++)
-                    jac[i][j] -= getResidual(i);
-
-                for (int i = 0; i < ngoals; i++)
-                    jac[i][j] /= (2.0 * dDelta[j]);
-
-                for (int k = 0; k < nadj; k++)
-                    delta[k] = (k == j) ? dDelta[j] : 0.0;
-
-                d = nudge(delta);  // back to starting value.
-
-                if (d == LMLSolver.BIGVAL) {
-                    //badray = true;
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public double getResidual(int i)         // Returns one element of the array resid[].
-        {
-            return resid[i];
-        }
-
-        @Override
-        public double getJacobian(int i, int j)         // Returns one element of the Jacobian matrix.
-        // i=datapoint, j=whichparm.
-        {
-            return jac[i][j];
-        }
-
-        @Override
-        public double nudge(double[] delta) {
-            point[0] += delta[0];
-            point[1] += delta[1];
-            return computeResiduals();
-        }
-    }
-
-
     public static RayResultWithStartCoord get_1d_solution(SequentialModel seq_model, Integer ifcx, Vector3 pt0, double dist, double wvl, double y_target, boolean not_wa) {
         RayResultWithStartCoord res = new RayResultWithStartCoord();
         SecantFunction fn = new SecantFunction(seq_model, ifcx, pt0, dist, wvl, y_target, not_wa, res.rr);
@@ -408,73 +306,57 @@ public class Trace {
         return res;
     }
 
-    public static RayResultWithStartCoord get_2d_mike_lampton_lavenberg_marquardt_solution(SequentialModel seq_model, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa) {
-        RayResultWithStartCoord res = new RayResultWithStartCoord();
-        ObjectiveFunction fn = new ObjectiveFunction(seq_model, ifcx, pt0, dist, wvl, Arrays.copyOf(xy_target, xy_target.length), not_wa, res.rr);
-        LMLSolver lm = new LMLSolver(fn, 1e-12, 2, 2);
-        int istatus = 0;
-        while (istatus != LMLSolver.BADITER &&
-                istatus != LMLSolver.LEVELITER &&
-                istatus != LMLSolver.MAXITER) {
-            istatus = lm.iLMiter();
+    /* Solver for use in Minpack algos */
+    static class HybrdObjectiveFunction extends BaseObjectiveFunction implements MinPack.Hybrd_Function {
+        final double[] xy_target; // target x,y values
+
+        public HybrdObjectiveFunction(SequentialModel seq_model, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa, RayResult rr) {
+            super(seq_model, ifcx, pt0, dist, wvl, not_wa, rr);
+            this.xy_target = xy_target;
         }
-        if (istatus == LMLSolver.LEVELITER) {
-            res.start_coords = fn.point;
+
+        @Override
+        public void apply(int n, double[] x, double[] fvec, int[] iflag) {
+            RaySeg seg = eval(x[0], x[1]);
+            fvec[0] = seg.p.x - xy_target[0];
+            fvec[1] = seg.p.y - xy_target[1];
         }
-        return res;
+
     }
 
-//    /* Solver for use in Minpack algos */
-//    static class LmObjectiveFunction extends BaseObjectiveFunction implements MinPack.Hybrd_Function, MinPack.Lmder_function {
-//        final double[] xy_target; // target x,y values
-//
-//        public LmObjectiveFunction(SequentialModel seq_model, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target) {
-//            super(seq_model, ifcx, pt0, dist, wvl);
-//            this.xy_target = xy_target;
-//        }
-//
-//        @Override
-//        public void apply(int n, double[] x, double[] fvec, int[] iflag) {
-//            RaySeg seg = eval(x[0], x[1]);
-//            // TODO following is only applicable when solving for y alone
-//            // we need a way to not do this when solving x and y.
-//            double residual = seg.p.x - xy_target[0];
-//            if (Math.abs(residual) > 2.2204460492503131e-16)
-//                residual = 9.876543e+99;
-//            fvec[0] = residual;
-//            fvec[1] = seg.p.y - xy_target[1];
-//        }
-//
-//        @Override
-//        public int apply(int m, int n, double[] x, double[] fvec, int iflag) {
-//            int[] iflags = new int[1];
-//            apply(n, x, fvec, iflags);
-//            return iflags[0];
-//        }
-//
-//        @Override
-//        public boolean hasJacobian() {
-//            return false;
-//        }
-//    }
+    public static RayResultWithStartCoord get_2d_solution(SequentialModel seq_model, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa) {
+        RayResultWithStartCoord res = new RayResultWithStartCoord();
+        HybrdObjectiveFunction f = new HybrdObjectiveFunction(seq_model, ifcx, pt0, dist, wvl, Arrays.copyOf(xy_target, xy_target.length), not_wa, res.rr);
+        double[] x = new double[2];
+        double[] fvec = new double[2];
+        int lwa = (2 * (3 * 2 + 13)) / 2;
+        double[] wa = new double[lwa];
+        int info[] = new int[1];
+        // epsfcn is relative error; fdjac1 uses its square root as the step.
+        double epsfcn = 1.0e-8;
+        info[0] = MinPack.hybrd1(f, 2, x, fvec, 1.0e-10, wa, lwa, epsfcn);
+        // Numerical Jacobian evaluation leaves rr referring to a perturbed ray.
+        f.apply(2, x, fvec, new int[1]);
 
-//    public static double[] get_2d_minpack_lavenberg_marquardt_solution(SequentialModel seq_model, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, FirstOrderData fod) {
-//
-//        LmObjectiveFunction f = new LmObjectiveFunction(seq_model, ifcx, pt0, dist, wvl, xy_target);
-//        double[] x = new double[2];
-//        double[] fvec = new double[2];
-//        double[] fjac = new double[4];
-//        int lwa = (2 * (3 * 2 + 13)) / 2;
-//        double[] wa = new double[lwa];
-//        int info[] = new int[1];
-//        int[] ipvt = new int[2];
-//        double epsfcn = 0.0001 * fod.enp_radius;
-//        //info[0] = MinPack.hybrd1(f, 2, x, fvec, 1e-15, wa, lwa, epsfcn);
-//        info[0] = MinPack.lmder1(f, 2, 2, x, fvec, fjac, 2, 1e-15, ipvt, wa, lwa, epsfcn);
-//        if (info[0] == 2)
-//            return x;
-//        return new double[]{0.0, 0.0};
-//    }
+        double residual = Math.hypot(fvec[0], fvec[1]);
+        double coordinateScale = Math.max(Math.max(Math.abs(x[0]), Math.abs(x[1])),
+                Math.max(Math.abs(xy_target[0]), Math.abs(xy_target[1])));
+        double residualTolerance = Math.max(1.0e-7,
+                1.0e-8 * coordinateScale);
+        boolean converged = info[0] >= 1 && info[0] <= 4
+                && residual <= residualTolerance;
+        if (!converged) {
+            TraceException failure = new TraceException("2D ray aiming failed: MINPACK info=" + info[0]
+                    + ", residual=" + residual + ", tolerance=" + residualTolerance
+                    + ", start=" + Arrays.toString(x));
+            failure.surf = ifcx;
+            failure.ifc = seq_model.ifcs.get(ifcx);
+            failure.ray_pkg = res.rr.pkg;
+            throw failure;
+        }
+        res.start_coords = x;
+        return res;
+    }
 
     /**
      * iterates a ray to xy_target on interface ifcx, returns aim points on
@@ -484,12 +366,6 @@ public class Trace {
      * <p>
      * If the iteration fails, a TraceError will be raised
      *
-     * @param opt_model
-     * @param ifcx
-     * @param xy_target
-     * @param fld
-     * @param wvl
-     * @return
      */
     public static RayResultWithStartCoord iterate_ray(final OpticalModel opt_model, Integer ifcx, double[] xy_target, Field fld, double wvl) {
         var seq_model = opt_model.seq_model;
@@ -502,17 +378,13 @@ public class Trace {
         var pt0 = coord.pt;
         var d0 = coord.dir;
 
-        // 0.3171082641317441 (secant)
-        // 0.3171081317490797 (lm)
-        // 0.3171081737822994 (expected)
         if (ifcx != null) {
             if (pt0.x == 0.0 && xy_target[0] == 0.0) {
                 // do 1D iteration if field and target points are zero in x
                 var y_target = xy_target[1];
                 return get_1d_solution(seq_model, ifcx, pt0, obj2enp_dist, wvl, y_target, not_wa);
             } else {
-                return get_2d_mike_lampton_lavenberg_marquardt_solution(seq_model, ifcx, pt0, obj2enp_dist, wvl, xy_target, not_wa);
-                //return get_2d_minpack_lavenberg_marquardt_solution(seq_model, ifcx, pt0, dist, wvl, xy_target, fod);
+                return get_2d_solution(seq_model, ifcx, pt0, obj2enp_dist, wvl, xy_target, not_wa);
             }
         } else {
             // floating stop surface - use entrance pupil for aiming
@@ -526,7 +398,9 @@ public class Trace {
      * returns a list of RayPkgs for the boundary rays for field fld
      */
     public static List<RayPkg> trace_boundary_rays_at_field(OpticalModel opt_model, Field fld, double wvl, TraceOptions trace_options) {
-        trace_options.rayerr_filter = "full";
+        // default it, rather than override a filter the caller chose
+        if (trace_options.rayerr_filter == null)
+            trace_options.rayerr_filter = "full";
         var ref_sphere_cr = setup_pupil_coords(opt_model,fld,wvl,0.0,null,null);
         fld.chief_ray = ref_sphere_cr.chief_ray_pkg;
         fld.ref_sphere = ref_sphere_cr.ref_sphere;
@@ -732,7 +606,7 @@ public class Trace {
         return rvalue;
     }
 
-    public static List<GridItem> trace_fan(OpticalModel opt_model, TraceFanDef fan_rng, Field fld, double wvl, double foc, ImageFilter img_filter, TraceOptions trace_options) {
+    public static List<GridItem> trace_fan(OpticalModel opt_model, TraceFanDef fan_rng, Field fld, double wvl, double foc, boolean append_if_none, ImageFilter img_filter, TraceOptions trace_options) {
         var start = fan_rng.start;
         var stop =  fan_rng.stop;
         var num = fan_rng.num_rays;
@@ -743,12 +617,15 @@ public class Trace {
             var ray_result = trace_safe(opt_model, pupil, fld, wvl, trace_options);
             if (ray_result.pkg != null) {
                 if (img_filter != null) {
-                    var result = img_filter.apply(pupil,ray_result.pkg);
-                    fan.add(result);
+                    fan.add(img_filter.apply(pupil,ray_result.pkg));
                 }
                 else {
                     fan.add(new GridItem(pupil,ray_result.pkg));
                 }
+            }
+            else if (append_if_none) {
+                //ray outside pupil or failed
+                fan.add(new GridItem(pupil,null));
             }
             start = new Vector2(start.x+step.x, start.y+step.y);
         }
@@ -757,6 +634,8 @@ public class Trace {
 
     public static List<GridItem> trace_grid(OpticalModel opt_model, TraceGridDef grid_rng, Field fld, double wvl, double foc, ImageFilter img_filter, boolean append_if_none, TraceOptions trace_options) {
         trace_options = trace_options.copy();
+        // A grid represents the physical sampled aperture; retain upstream
+        // ray-optics behaviour regardless of the general TraceOptions default.
         trace_options.check_apertures = true;
         var start = grid_rng.grid_start;
         var stop = grid_rng.grid_stop;
@@ -796,6 +675,9 @@ public class Trace {
 
     public static List<GridItem> trace_rings(OpticalModel opt_model, TraceRingsDef grid_rng, Field fld, double wvl, double foc, ImageFilter img_filter, boolean append_if_none, TraceOptions trace_options) {
         trace_options = trace_options.copy();
+        // Ring/hexapolar spot analysis has the same physical-aperture semantics
+        // as the upstream grid tracer. Only the optimization-oriented Gaussian
+        // quadrature path permits this check to be disabled.
         trace_options.check_apertures = true;
         trace_options.pupil_type = PupilType.REL_PUPIL;
         trace_options.apply_vignetting = true;
@@ -882,31 +764,6 @@ public class Trace {
         return points;
     }
 
-    private static List<Vector2> generate_gaussian(TraceRingsDef grid_rng, int ncircles, double max_radius) {
-        List<Vector2> points;
-        points = new ArrayList<>();
-        double cx = grid_rng.cx, cy = grid_rng.cy;  // center of ring
-        points.add(new Vector2(cx,cy));
-        double sigma = max_radius/Math.sqrt(2.0*Math.log(1+ncircles));
-        for (int icirc=1; icirc<=ncircles; icirc++)
-        {
-            double daz = 60.0 / icirc;
-            double offset = (icirc%2 == 0) ? 0.0 : 0.5*daz;
-            double p = M.square(icirc)/(ncircles + M.square(ncircles));
-            double r = sigma*Math.sqrt(2.0*Math.log(1/(1-p)));
-            for (int jaz = 0; jaz<6*icirc; jaz++)
-            {
-                double angle_deg = offset + jaz*daz;
-                double angle_rad = Math.toRadians(angle_deg);
-                double x = cx + r*Math.cos(angle_rad);
-                double y = cy + r*Math.sin(angle_rad);
-                points.add(new Vector2(x, y));
-            }
-        }
-        return points;
-    }
-
-
     static class BaseObjectiveFunctionRaw {
         final List<PathSeg> pthlist;
         final Integer ifcx;
@@ -943,6 +800,8 @@ public class Trace {
                 rr.pkg = pkg;
                 rr.err = null;
             } catch (TraceException ray_error) {
+                if (logger.isLoggable(Level.FINE))
+                    logger.fine("ray_error: \"" + ray_error.getClass().getSimpleName() + "\", ray_error.surf=" + ray_error.surf);
                 pkg = ray_error.ray_pkg;
                 rr.pkg = ray_error.ray_pkg;
                 rr.err = ray_error;
@@ -971,105 +830,6 @@ public class Trace {
         }
     }
 
-    /* Solver for use in LMLSolver */
-    static class ObjectiveFunctionRaw extends BaseObjectiveFunctionRaw implements LMLFunction {
-
-        private final double[][] jac = new double[2][2];
-        private final double[] resid = {0, 0};
-        private final double[] dDelta = {1E-6, 1E-6};
-        private final double[] point = {0, 0}; // Actual x,y values
-
-        final double[] xy_target; // target x,y values
-
-        public ObjectiveFunctionRaw(List<PathSeg> pthlist, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa, RayResult rr) {
-            super(pthlist, ifcx, pt0, dist, wvl, not_wa, rr);
-            this.xy_target = xy_target;
-        }
-
-        @Override
-        public double computeResiduals() {
-            RaySeg seg = eval(point[0], point[1]);
-            double[] p = {seg.p.x, seg.p.y};
-            double sos = 0.0;
-            for (int i = 0; i < p.length; i++) {
-                resid[i] = xy_target[i] - p[i];
-                sos += (resid[i] * resid[i]);
-            }
-            //return Math.sqrt(sos / p.length);
-            return sos;
-        }
-
-        @Override
-        public boolean buildJacobian()             // Uses current vector parms[].
-        // If current parms[] is bad, returns false.
-        // False should trigger an explanation.
-        // Called by LMray.iLMiter().
-        {
-            final int nadj = 2;
-            final int ngoals = 2;
-            double delta[] = new double[nadj];
-            double d = 0;
-            for (int j = 0; j < nadj; j++) {
-                for (int k = 0; k < nadj; k++)
-                    delta[k] = (k == j) ? dDelta[j] : 0.0;
-
-                d = nudge(delta); // resid at pplus
-                if (d == LMLSolver.BIGVAL) {
-                    //badray = true;
-                    return false;
-                }
-                for (int i = 0; i < ngoals; i++)
-                    jac[i][j] = getResidual(i);
-
-                for (int k = 0; k < nadj; k++)
-                    delta[k] = (k == j) ? -2.0 * dDelta[j] : 0.0;
-
-                d = nudge(delta); // resid at pminus
-                if (d == LMLSolver.BIGVAL) {
-                    //badray = true;
-                    return false;
-                }
-
-                for (int i = 0; i < ngoals; i++)
-                    jac[i][j] -= getResidual(i);
-
-                for (int i = 0; i < ngoals; i++)
-                    jac[i][j] /= (2.0 * dDelta[j]);
-
-                for (int k = 0; k < nadj; k++)
-                    delta[k] = (k == j) ? dDelta[j] : 0.0;
-
-                d = nudge(delta);  // back to starting value.
-
-                if (d == LMLSolver.BIGVAL) {
-                    //badray = true;
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public double getResidual(int i)         // Returns one element of the array resid[].
-        {
-            return resid[i];
-        }
-
-        @Override
-        public double getJacobian(int i, int j)         // Returns one element of the Jacobian matrix.
-        // i=datapoint, j=whichparm.
-        {
-            return jac[i][j];
-        }
-
-        @Override
-        public double nudge(double[] delta) {
-            point[0] += delta[0];
-            point[1] += delta[1];
-            return computeResiduals();
-        }
-    }
-
     public static RayResultWithStartCoord get_1d_solution_raw(List<PathSeg> pthlist, Integer ifcx, Vector3 pt0, double dist, double wvl, double y_target, boolean not_wa) {
         RayResultWithStartCoord res = new RayResultWithStartCoord();
         SecantFunctionRaw fn = new SecantFunctionRaw(pthlist, ifcx, pt0, dist, wvl, y_target, not_wa, res.rr);
@@ -1078,21 +838,57 @@ public class Trace {
         return res;
     }
 
-    public static RayResultWithStartCoord get_2d_mike_lampton_lavenberg_marquardt_solution_raw(List<PathSeg> pthlist, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa) {
+    /* Solver for use in Minpack algos */
+    static class HybrdObjectiveFunctionRaw extends BaseObjectiveFunctionRaw implements MinPack.Hybrd_Function {
+        final double[] xy_target; // target x,y values
+
+        public HybrdObjectiveFunctionRaw(List<PathSeg> pthlist, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa, RayResult rr) {
+            super(pthlist, ifcx, pt0, dist, wvl, not_wa, rr);
+            this.xy_target = xy_target;
+        }
+
+        @Override
+        public void apply(int n, double[] x, double[] fvec, int[] iflag) {
+            RaySeg seg = eval(x[0], x[1]);
+            fvec[0] = seg.p.x - xy_target[0];
+            fvec[1] = seg.p.y - xy_target[1];
+        }
+    }
+
+    public static RayResultWithStartCoord get_2d_solution_raw(List<PathSeg> pthlist, Integer ifcx, Vector3 pt0, double dist, double wvl, double[] xy_target, boolean not_wa) {
         RayResultWithStartCoord res = new RayResultWithStartCoord();
-        ObjectiveFunctionRaw fn = new ObjectiveFunctionRaw(pthlist, ifcx, pt0, dist, wvl, Arrays.copyOf(xy_target, xy_target.length), not_wa, res.rr);
-        LMLSolver lm = new LMLSolver(fn, 1e-12, 2, 2);
-        int istatus = 0;
-        while (istatus != LMLSolver.BADITER &&
-                istatus != LMLSolver.LEVELITER &&
-                istatus != LMLSolver.MAXITER) {
-            istatus = lm.iLMiter();
+        HybrdObjectiveFunctionRaw f = new HybrdObjectiveFunctionRaw(pthlist, ifcx, pt0, dist, wvl, Arrays.copyOf(xy_target, xy_target.length), not_wa, res.rr);
+        double[] x = new double[2];
+        double[] fvec = new double[2];
+        int lwa = (2 * (3 * 2 + 13)) / 2;
+        double[] wa = new double[lwa];
+        int info[] = new int[1];
+        // epsfcn is relative error; fdjac1 uses its square root as the step.
+        double epsfcn = 1.0e-8;
+        info[0] = MinPack.hybrd1(f, 2, x, fvec, 1.0e-10, wa, lwa, epsfcn);
+        // Numerical Jacobian evaluation leaves rr referring to a perturbed ray.
+        f.apply(2, x, fvec, new int[1]);
+
+        double residual = Math.hypot(fvec[0], fvec[1]);
+        double coordinateScale = Math.max(Math.max(Math.abs(x[0]), Math.abs(x[1])),
+                Math.max(Math.abs(xy_target[0]), Math.abs(xy_target[1])));
+        double residualTolerance = Math.max(1.0e-7,
+                1.0e-8 * coordinateScale);
+        boolean converged = info[0] >= 1 && info[0] <= 4
+                && residual <= residualTolerance;
+        if (!converged) {
+            TraceException failure = new TraceException("2D ray aiming failed: MINPACK info=" + info[0]
+                    + ", residual=" + residual + ", tolerance=" + residualTolerance
+                    + ", start=" + Arrays.toString(x));
+            failure.surf = ifcx;
+            failure.ifc = pthlist.get(ifcx).ifc;
+            failure.ray_pkg = res.rr.pkg;
+            throw failure;
         }
-        if (istatus == LMLSolver.LEVELITER) {
-            res.start_coords = fn.point;
-        }
+        res.start_coords = x;
         return res;
     }
+
 
     /**
      * iterates a ray to xy_target on interface ifcx, returns aim points on
@@ -1119,12 +915,12 @@ public class Trace {
                 }
             } else {
                 try {
-                    return get_2d_mike_lampton_lavenberg_marquardt_solution_raw(pthlist, ifcx, pt0, obj2pup_dist, wvl, xy_target, not_wa);
-                    //return get_2d_minpack_lavenberg_marquardt_solution(seq_model, ifcx, pt0, dist, wvl, xy_target, fod);
+                    return get_2d_solution_raw(pthlist, ifcx, pt0, obj2pup_dist, wvl, xy_target, not_wa);
                 }
                 catch (TraceException ray_err) {
                     var result = new RayResultWithStartCoord();
                     result.start_coords = new double[]{0,0};
+                    result.rr = new RayResult(ray_err.ray_pkg, ray_err);
                     return result;
                 }
             }

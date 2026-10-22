@@ -283,7 +283,7 @@ public class FieldSpec {
             }
             else {
                 obj_pt = new Vector3(dir_cos.x/dir_cos.z,
-                        dir_cos.y/dir_cos.z,0.0).times(obj2enp_dist);
+                        dir_cos.y/dir_cos.z,0.0).times(-obj2enp_dist);
             }
             obj_dir = dir_cos;
         }
@@ -321,14 +321,15 @@ public class FieldSpec {
                     obj_dir = fld_angle.sin();
                     var z = Math.sqrt(1.0 - obj_dir.x * obj_dir.x - obj_dir.y * obj_dir.y);
                     obj_dir = new Vector3(obj_dir.x, obj_dir.y, z);
-                    obj_pt = new Vector3(obj_dir.x/obj_dir.z, obj_dir.y/obj_dir.z,0.0).times(obj2enp_dist);
+                    obj_pt = new Vector3(obj_dir.x/obj_dir.z, obj_dir.y/obj_dir.z,0.0).times(-obj2enp_dist);
                     return new Coord(obj_pt,obj_dir);
                 }
                 else {
                     obj_pt = fld_coord;
                 }
-                obj_dir = pt1.minus(obj_pt).normalize();
             }
+            // applies to both the image and object keyed branches above
+            obj_dir = pt1.minus(obj_pt).normalize();
         }
         return new Coord(obj_pt,obj_dir);
     }

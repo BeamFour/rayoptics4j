@@ -1,5 +1,9 @@
+// This code is part of Beam42 project (https://github.com/BeamFour/Beam42)
+// Copyright 2025-2026 by Dibyendu Majumdar
+// License GPL v3
 package org.redukti.rayoptics.analysis;
 
+import org.redukti.rayoptics.util.Orientation;
 import org.redukti.mathlib.Vector2;
 import org.redukti.rayoptics.optical.OpticalModel;
 import org.redukti.rayoptics.raytr.RayFanType;
@@ -23,17 +27,17 @@ public class TransverseRayAberrationAnalysis {
         return null;
     }
 
-    public static TraceFanResult eval_abr_fan(OpticalModel opt_model,int fi,int xy,int num_rays,TraceOptions trace_options) {
+    public static TraceFanResult eval_abr_fan(OpticalModel opt_model,int fi,int xy,int num_rays,boolean append_if_none,TraceOptions trace_options) {
         var seq_model =  opt_model.seq_model;
-        return seq_model.trace_fan(TransverseRayAberrationAnalysis::ray_abr,fi,xy,num_rays,trace_options).setFanType(RayFanType.TransverseRayFan);
+        return seq_model.trace_fan(TransverseRayAberrationAnalysis::ray_abr,fi,xy,num_rays,append_if_none,trace_options).setFanType(RayFanType.TransverseRayFan);
     }
 
-    public static RayAberrationResult eval(OpticalModel opt_model, int num_rays, TraceOptions trace_options) {
+    public static RayAberrationResult eval(OpticalModel opt_model, int num_rays, boolean append_if_none, TraceOptions trace_options) {
         RayAberrationResult result = new RayAberrationResult();
         var fov = opt_model.optical_spec.fov;
         for (int fi = 0; fi < fov.fields.length; fi++) {
-            for (int xy = 0; xy < 2; xy++) {
-                result.add(eval_abr_fan(opt_model,fi,xy,num_rays,trace_options));
+            for (int xy = 0; xy < Orientation.COUNT; xy++) {
+                result.add(eval_abr_fan(opt_model,fi,xy,num_rays,append_if_none,trace_options));
             }
         }
         return result;
